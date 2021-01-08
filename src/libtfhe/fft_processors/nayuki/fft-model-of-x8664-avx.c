@@ -1,9 +1,9 @@
-/* 
+/*
  * Fast Fourier transform for x86-64 AVX (C)
- * 
+ *
  * Copyright (c) 2016 Project Nayuki
  * https://www.nayuki.io/page/fast-fourier-transform-in-x86-assembly
- * 
+ *
  * (MIT License)
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -41,7 +41,7 @@ struct FftTables {
 void fft_transform(const void *tables, double *real, double *imag) {
 	struct FftTables *tbl = (struct FftTables *)tables;
 	uint64_t n = tbl->n;
-	
+
 	// Bit-reversed addressing permutation
 	uint64_t i;
 	uint64_t *bitreversed = tbl->bit_reversed;
@@ -58,7 +58,7 @@ void fft_transform(const void *tables, double *real, double *imag) {
 			imag[j] = tp0im;
 		}
 	}
-	
+
 	// Size 2 merge (special)
 	if (n >= 2) {
 		for (i = 0; i < n; i += 2) {
@@ -70,7 +70,7 @@ void fft_transform(const void *tables, double *real, double *imag) {
 			imag[i + 1] = tpim - imag[i + 1];
 		}
 	}
-	
+
 	// Size 4 merge (special)
 	if (n >= 4) {
 		for (i = 0; i < n; i += 4) {
@@ -93,7 +93,7 @@ void fft_transform(const void *tables, double *real, double *imag) {
 			imag[i + 3] = tpim;
 		}
 	}
-	
+
 	// Size 8 and larger merges (general)
 	double *trigtables = tbl->trig_tables;
 	uint64_t size;
@@ -129,7 +129,9 @@ void fft_transform(const void *tables, double *real, double *imag) {
 void fft_transform_reverse(const void *tables, double *real, double *imag) {
 	struct FftTables *tbl = (struct FftTables *)tables;
 	uint64_t n = tbl->n;
-	
+
+    //A TODO rewrite to AFNT
+
 	// Bit-reversed addressing permutation
 	uint64_t i;
 	uint64_t *bitreversed = tbl->bit_reversed;
@@ -146,7 +148,7 @@ void fft_transform_reverse(const void *tables, double *real, double *imag) {
 			imag[j] = tp0im;
 		}
 	}
-	
+
 	// Size 2 merge (special)
 	if (n >= 2) {
 		for (i = 0; i < n; i += 2) {
@@ -158,7 +160,7 @@ void fft_transform_reverse(const void *tables, double *real, double *imag) {
 			imag[i + 1] = tpim - imag[i + 1];
 		}
 	}
-	
+
 	// Size 4 merge (special)
 	if (n >= 4) {
 		for (i = 0; i < n; i += 4) {
@@ -181,7 +183,7 @@ void fft_transform_reverse(const void *tables, double *real, double *imag) {
 			imag[i + 3] = tpim;
 		}
 	}
-	
+
 	// Size 8 and larger merges (general)
 	double *trigtables = tbl->trig_tables;
 	uint64_t size;

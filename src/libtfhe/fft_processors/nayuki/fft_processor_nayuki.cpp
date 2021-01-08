@@ -12,7 +12,7 @@ FFT_Processor_nayuki::FFT_Processor_nayuki(const int32_t N): _2N(2*N),N(N),Ns2(N
     tables_reverse = fft_init_reverse(_2N);
     omegaxminus1 = (cplx*) malloc(sizeof(cplx) * _2N);
     for (int32_t x=0; x<_2N; x++) {
-	omegaxminus1[x]=cplx(cos(x*M_PI/N)-1., sin(x*M_PI/N)); // instead of cos(x*M_PI/N)-1. + sin(x*M_PI/N) * 1i 
+	omegaxminus1[x]=cplx(cos(x*M_PI/N)-1., sin(x*M_PI/N)); // instead of cos(x*M_PI/N)-1. + sin(x*M_PI/N) * 1i
 	//exp(i.x.pi/N)-1
     }
 }
@@ -31,20 +31,29 @@ void FFT_Processor_nayuki::check_conjugate_cplx() {
 #endif
 }
 
+//A TODO this is to be modified to calculate AFNT
+
 void FFT_Processor_nayuki::execute_reverse_int(cplx* res, const int32_t* a) {
     double* res_dbl=(double*) res;
+    //A division by 2 -> not needed
     for (int32_t i=0; i<N; i++) real_inout[i]=a[i]/2.;
+    //A negacyclic extension -> not needed
     for (int32_t i=0; i<N; i++) real_inout[N+i]=-real_inout[i];
+    //A init imaginary part -> not needed
     for (int32_t i=0; i<_2N; i++) imag_inout[i]=0;
     check_alternate_real();
+    //A standard FFT -> AFNT (with reals only)
     fft_transform_reverse(tables_reverse,real_inout,imag_inout);
-    for (int32_t i=0; i<N; i+=2) { 
-	res_dbl[i]=real_inout[i+1];
+    //A
+    for (int32_t i=0; i<N; i+=2) {
+    //A takes only odd-th positions -> take all (only half that amount btw.)
+    res_dbl[i]=real_inout[i+1];
 	res_dbl[i+1]=imag_inout[i+1];
     }
     for (int32_t i=0; i<Ns2; i++) {
 	assert(abs(cplx(real_inout[2*i+1],imag_inout[2*i+1])-res[i])<1e-20);
     }
+    //A checks zeros at even-th positions and Hermitianity -> not needed
     check_conjugate_cplx();
 }
 
@@ -88,15 +97,15 @@ void FFT_Processor_nayuki::execute_direct_torus32(Torus32* res, const cplx* a) {
 FFT_Processor_nayuki::~FFT_Processor_nayuki() {
     fft_destroy(tables_direct);
     fft_destroy(tables_reverse);
-    free(real_inout); 
+    free(real_inout);
     free(imag_inout);
-    free(omegaxminus1);    
+    free(omegaxminus1);
 }
 
 thread_local FFT_Processor_nayuki fp1024_nayuki(1024);
 
 /**
- * FFT functions 
+ * FFT functions
  */
 EXPORT void IntPolynomial_ifft(LagrangeHalfCPolynomial* result, const IntPolynomial* p) {
     LagrangeHalfCPolynomial_IMPL* r = (LagrangeHalfCPolynomial_IMPL*) result;
