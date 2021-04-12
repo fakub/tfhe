@@ -4,3 +4,6 @@ callgrind.*
 doc
 bin
 build
+
+my-examples/bin
+my-examples/build
