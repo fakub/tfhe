@@ -12,47 +12,99 @@
 #include "tlwe.h"
 #include "tgsw.h"
 
+#define PI 4
+
 using namespace std;
 
-void paral_sym_encr(LweSample *result,
+void die_soon(string message)
+{
+    cerr << message << endl;
+    abort();
+}
+
+void paral_sym_encr_priv(LweSample *ct,
+                         const int32_t message,
+                         const TFheGateBootstrappingSecretKeySet *key)
+{
+    Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
+
+    // scale to [-8/16, 7/16]
+    //                         ___/ 8 \___     _/ mask 1111 \_     ___/ 8 \___
+    Torus32 mu = (((message + (1 << (PI-1))) & ((1 << PI) - 1)) - (1 << (PI-1))) * _1s16;
+    double alpha = key->params->in_out_params->alpha_min; //TODO: specify noise
+    lweSymEncrypt(ct, mu, alpha, key->lwe_key);
+}
+
+void paral_sym_encr(LweSample *ct,
                     const int32_t message,
                     const TFheGateBootstrappingSecretKeySet *key)
 {
-    Torus32 _1s16 = modSwitchToTorus32(1, 16);
-    Torus32 mu = (((message + 8) & 0x0f) - 8) * _1s16;  // scales to [-8/16, 7/16], consider only [-2,2] interval?
-    double alpha = key->params->in_out_params->alpha_min; //TODO: specify noise
-    lweSymEncrypt(result, mu, alpha, key->lwe_key);
+    if (message < -2) || (2 < message)
+        die_soon("Out of the alphabet A = [-2 .. 2].\n");
+
+    paral_sym_encr_priv(ct, message, key);
 }
 
-void paral_add(LweSample *result,
-               const LweSample *ca,
-               const LweSample *cb,
+void paral_calc_qi(LweSample *qi,
+                   const LweSample *w_i0,
+                   const LweSample *w_i1,
+                   const TFheGateBootstrappingSecretKeySet *bk)
+{
+    const LweParams *io_lwe_params = bk->params->in_out_params;
+
+    //TODO calc aux variables
+    LweSample *r1 = new_LweSample(io_lwe_params);   // w_i   <> +-3
+    LweSample *r2 = new_LweSample(io_lwe_params);   // w_i   == +-2
+    LweSample *r3 = new_LweSample(io_lwe_params);   // w_i-1 <> +-2
+    LweSample *r23= new_LweSample(io_lwe_params);   // r2+r3 == +-2   (r23)
+
+    // q_i = r1 + r23
+    lweNoiselessTrivial(qi, 0, io_lwe_params);
+    lweAddTo(qi, r1, io_lwe_params);
+    lweAddTo(qi, r23, io_lwe_params);
+}
+
+// there must be two more samples to the right in x and y !!
+void paral_add(LweSample *z,
+               const LweSample *x,
+               const LweSample *y,
                const TFheGateBootstrappingCloudKeySet *bk)
 {
-    static const Torus32 MU = modSwitchToTorus32(1, 8);
-    const LweParams *in_out_params = bk->params->in_out_params;
+    const LweParams *io_lwe_params = bk->params->in_out_params;
 
-    LweSample *temp_result = new_LweSample(in_out_params);
+    // calc w_i = x_i + y_i   for i, i-1, i-2
+    LweSample *w_i0 = new_LweSample(io_lwe_params);
+    lweAddTo(w_i0, x, io_lwe_params);
+    lweAddTo(w_i0, y, io_lwe_params);
 
-    //compute: (0,-1/8) + ca + cb
-    static const Torus32 AndConst = modSwitchToTorus32(-1, 8);
-    lweNoiselessTrivial(temp_result, AndConst, in_out_params);
-    lweAddTo(temp_result, ca, in_out_params);
-    lweAddTo(temp_result, cb, in_out_params);
+    LweSample *w_i1 = new_LweSample(io_lwe_params);
+    lweAddTo(w_i1, x + 1, io_lwe_params);
+    lweAddTo(w_i1, y + 1, io_lwe_params);
 
-    //if the phase is positive, the result is 1/8
-    //if the phase is positive, else the result is -1/8
-    tfhe_bootstrap_FFT(result, bk->bkFFT, MU, temp_result);
+    LweSample *w_i2 = new_LweSample(io_lwe_params);
+    lweAddTo(w_i2, x + 2, io_lwe_params);
+    lweAddTo(w_i2, y + 2, io_lwe_params);
 
-    delete_LweSample(temp_result);
+    // calc q_i0 and q_i1
+    paral_calc_qi(q_i0, w_i0, w_i1, io_lwe_params)
+    paral_calc_qi(q_i1, w_i1, w_i2, io_lwe_params)
+
+    // calculate result: z_i = w_i - 4q_i + q_i-1
+    lweNoiselessTrivial(z, 0, io_lwe_params);
+    lweAddTo(z, w_i0, io_lwe_params);
+    lweSubMulTo(z, 4, q_i0, io_lwe_params)
+    lweAddTo(z, q_i1, io_lwe_params);
+
+    //TODO more like functional bootstrap: identity [-2 .. 2]
+    //~ tfhe_bootstrap_FFT(result, bk->bkFFT, MU, temp_result);
 }
 
 int32_t paral_sym_decr(const LweSample *sample,
                        const TFheGateBootstrappingSecretKeySet *key)
 {
-    Torus32 _1s16 = modSwitchToTorus32(1, 16);
+    Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
     Torus32 mu = lwePhase(sample, key->lwe_key);
-    return (mu + (_1s16 >> 1)) / _1s16;
+    return (mu + (_1s16 >> 1)) >> (32 - PI);
 }
 
 
