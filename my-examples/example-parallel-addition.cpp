@@ -62,59 +62,86 @@ int32_t paral_sym_decr(const LweSample *sample,
 //  LUT Bootstrapping: Threshold
 //
 void paral_bs_set_tv_identity(Torus32 *const tv,
-                              const int32_t N,
+                              const uint32_t N,
                               const Torus32 MU)
 {
-    // make a stair around zero
-    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
-    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+    uint32_t i, s;
+
+    // make a 0-stair around zero
+    for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
 
     // make other stairs
-    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    for (s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
     {
-        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
-        {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
             tv[i] = s * MU;
-        }
     }
 }
 
 void paral_bs_set_tv_gleq(Torus32 *const tv,
-                          const int32_t N,
+                          const uint32_t N,
                           const uint32_t thr,
                           const Torus32 MU)
 {
-    // make a stair around zero
-    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
-    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+    if ((thr > (1 << (PI - 2))) || thr == 0)
+        die_soon("Threshold for bootstrapping too large or zero.");
+
+    uint32_t i, s;
+
+    // make a 0-stair around zero
+    for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
 
     // make other stairs
-    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    // 0's first part
+    for (s = 1; s < thr; s++)
     {
-        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
-        {
-            tv[i] = s * MU;
-        }
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 0 * MU;
+    }
+    // 1's
+    for (s = thr; s <= (1 << (PI-1)) - thr; s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 1 * MU;
+    }
+    // 0's second part
+    for (s = (1 << (PI-1)) - thr + 1; s < (1 << (PI-1)); s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 0 * MU;
     }
 }
 
 void paral_bs_set_tv_eq(Torus32 *const tv,
-                        const int32_t N,
+                        const uint32_t N,
                         const uint32_t thr,
                         const Torus32 MU)
 {
-    // make a stair around zero
-    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
-    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+    if ((thr > (1 << (PI - 2))) || thr == 0)
+        die_soon("Threshold for bootstrapping too large or zero.");
+
+    uint32_t i, s;
+
+    // make a 0-stair around zero
+    for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
 
     // make other stairs
-    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    // 0's elsewhere
+    for (s = 1; s < (1 << (PI-1)); s++)
     {
-        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
-        {
-            tv[i] = s * MU;
-        }
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 0 * MU;
     }
+    // 1's at specific positions
+    s = thr;
+    for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+        tv[i] = 1 * MU;
+    s = (1 << (PI-1)) - thr;
+    for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+        tv[i] = 1 * MU;
 }
 
 void paral_bs_priv(LweSample *result,
@@ -155,7 +182,7 @@ void paral_bs_id(LweSample *result,
                  const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
-    const int32_t N = bk->bkFFT->accum_params->N;
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
     const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
     // init test vector with stair-case function
@@ -175,7 +202,7 @@ void paral_bs_gleq(LweSample *result,
                    const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
-    const int32_t N = bk->bkFFT->accum_params->N;
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
     const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
     // init test vector with stair-case function
@@ -188,13 +215,14 @@ void paral_bs_gleq(LweSample *result,
     // delete test vector
     delete_TorusPolynomial(testvect);
 }
+
 void paral_bs_eq(LweSample *result,
                  const LweSample *sample,
                  const uint32_t thr,
                  const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
-    const int32_t N = bk->bkFFT->accum_params->N;
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
     const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
     // init test vector with stair-case function
@@ -311,7 +339,7 @@ int32_t main(int32_t argc, char **argv)
 
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
-    printf(" Encr -> Decr  | Id. | <> 3 | == 2 |\n");
+    printf(" Encr -> Decr  | Id. | <=> 3 | == 2 |\n");
     printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < 16; i++)
@@ -330,7 +358,7 @@ int32_t main(int32_t argc, char **argv)
         int32_t gl_plain    = paral_sym_decr(gl, tfhe_keys);
         int32_t eq_plain    = paral_sym_decr(eq, tfhe_keys);
 
-        printf(" D[E(%+d)] = %+d |  %+d |  %+d  |  %+d  |\n", i-8, x_plain, id_plain, gl_plain, eq_plain);
+        printf(" D[E(%+d)] = %+d |  %+d |   %+d  |  %+d  |\n", i-8, x_plain, id_plain, gl_plain, eq_plain);
     }
     printf("\n");
 
