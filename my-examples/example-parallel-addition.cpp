@@ -74,40 +74,47 @@ void paral_bs_gleq(LweSample *result,
     LweSample *tmp = new_LweSample(&bkFFT->accum_params->extracted_lweparams);
     const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
-    //~ tfhe_bootstrap_woKS_FFT(tmp, bkFFT, MU, sample);
 
-            const TGswParams *bk_params = bkFFT->bk_params;
-            const TLweParams *accum_params = bkFFT->accum_params;
-            const LweParams *in_params = bkFFT->in_out_params;
-            const int32_t N = accum_params->N;
-            const int32_t Nx2 = 2 * N;
-            const int32_t n = in_params->n;
+    //  Bootstrapping BEGIN   --------------------------------------------------
 
-            TorusPolynomial *testvect = new_TorusPolynomial(N);
-            int32_t *bara = new int32_t[N];
+    const TGswParams *bk_params = bkFFT->bk_params;
+    const TLweParams *accum_params = bkFFT->accum_params;
+    const LweParams *in_params = bkFFT->in_out_params;
+    const int32_t N = accum_params->N;
+    const int32_t Nx2 = 2 * N;
+    const int32_t n = in_params->n;
 
-
-            // Modulus switching
-            int32_t barb = modSwitchFromTorus32(sample->b, Nx2);
-            for (int32_t i = 0; i < n; i++) {
-                bara[i] = modSwitchFromTorus32(sample->a[i], Nx2);
-            }
-
-            // the initial testvec = [mu,mu,mu,...,mu]
-            for (int32_t i = 0; i < N/4; i++) testvect->coefsT[i] = 0*MU;
-            for (int32_t i = N/4; i < 3*N/4; i++) testvect->coefsT[i] = 1*MU;
-            for (int32_t i = 3*N/4; i < N; i++) testvect->coefsT[i] = 0*MU;
-
-            // Bootstrapping rotation and extraction
-            tfhe_blindRotateAndExtract_FFT(tmp, testvect, bkFFT->bkFFT, barb, bara, n, bk_params);
-            //FUCKUP #02:   TFheGateBootstrappingCloudKeySet has member 'bkFFT',
-            //              which is LweBootstrappingKeyFFT, which also has member 'bkFFT', which is TGswSampleFFT
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    int32_t *bara = new int32_t[N];
 
 
-            delete[] bara;
-            delete_TorusPolynomial(testvect);
+    // Modulus switching
+    int32_t barb = modSwitchFromTorus32(sample->b, Nx2);
+    for (int32_t i = 0; i < n; i++)
+        bara[i] = modSwitchFromTorus32(sample->a[i], Nx2);
 
-    // -------------------------------------------------------------------------
+    // init test vector with stair-case function
+    for (int32_t i = 0*N/16;        i < 0*N/8 + N/16; i++) testvect->coefsT[i] = 0*MU;
+    for (int32_t i = 7*N/8 + N/16;  i < 8*N/8       ; i++) testvect->coefsT[i] = 0*MU;
+    for (int32_t i = 1*N/8 - N/16;  i < 1*N/8 + N/16; i++) testvect->coefsT[i] = 1*MU;
+    for (int32_t i = 2*N/8 - N/16;  i < 2*N/8 + N/16; i++) testvect->coefsT[i] = 2*MU;
+    for (int32_t i = 3*N/8 - N/16;  i < 3*N/8 + N/16; i++) testvect->coefsT[i] = 3*MU;
+    for (int32_t i = 4*N/8 - N/16;  i < 4*N/8 + N/16; i++) testvect->coefsT[i] = 4*MU;
+    for (int32_t i = 5*N/8 - N/16;  i < 5*N/8 + N/16; i++) testvect->coefsT[i] = 5*MU;
+    for (int32_t i = 6*N/8 - N/16;  i < 6*N/8 + N/16; i++) testvect->coefsT[i] = 6*MU;
+    for (int32_t i = 7*N/8 - N/16;  i < 7*N/8 + N/16; i++) testvect->coefsT[i] = 7*MU;
+
+    // Blind rotation and sample extraction
+    tfhe_blindRotateAndExtract_FFT(tmp, testvect, bkFFT->bkFFT, barb, bara, n, bk_params);
+    //FUCKUP #02:   TFheGateBootstrappingCloudKeySet has member 'bkFFT',
+    //              which is LweBootstrappingKeyFFT, which also has member 'bkFFT', which is TGswSampleFFT
+
+
+    delete[] bara;
+    delete_TorusPolynomial(testvect);
+
+    //  Bootstrapping END   ----------------------------------------------------
+
 
     // Key switching
     lweKeySwitch(result, bkFFT->ks, tmp);
