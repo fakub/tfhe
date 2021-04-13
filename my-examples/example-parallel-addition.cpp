@@ -290,6 +290,7 @@ void paral_add(LweSample *z,
     LweSample *w = new_LweSample_array(3, io_lwe_params);
     LweSample *q = new_LweSample_array(2, io_lwe_params);
     LweSample *tmpz = new_LweSample(io_lwe_params);
+                LweSample *tmpzz = new_LweSample(io_lwe_params);   // unless parameters allow addition of 12 values
 
     // calc w_i = x_i + y_i   for i, i-1, i-2
     for (int i = 0; i < 3; i++)
@@ -306,13 +307,19 @@ void paral_add(LweSample *z,
     // calculate result: z_i = w_i - 4q_i + q_i-1
     lweNoiselessTrivial(tmpz, 0, io_lwe_params);
     lweAddTo(tmpz, w, io_lwe_params);
-    lweSubMulTo(tmpz, 4, q, io_lwe_params);
+    //~ lweSubMulTo(tmpz, 4, q, io_lwe_params);   //TODO params to allow 12 additions
+                // addition of 12 values is already too much for these parameters
+                lweSubMulTo(tmpz, 2, q, io_lwe_params);
+                paral_bs_id(tmpzz, tmpz, bk); lweCopy(tmpz, tmpzz, io_lwe_params);   // noise must be refreshed
+                lweSubMulTo(tmpz, 2, q, io_lwe_params);
+
     lweAddTo(tmpz, q + 1, io_lwe_params);
 
     // bootstrap to refresh noise
     paral_bs_id(z, tmpz, bk);
 
     // cleanup
+                delete_LweSample(tmpzz);   // unless parameters allow addition of 12 values
     delete_LweSample(tmpz);
     delete_LweSample_array(2, q);
     delete_LweSample_array(3, w);
