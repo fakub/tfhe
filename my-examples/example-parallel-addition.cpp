@@ -13,6 +13,8 @@
 #include "tgsw.h"
 
 #define PI 4
+//~ #define BS_TEST
+#define PA_TEST
 
 using namespace std;
 
@@ -340,22 +342,18 @@ int32_t main(int32_t argc, char **argv)
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *tfhe_keys = new_random_gate_bootstrapping_secret_keyset(tfhe_params);
 
+
+#ifdef BS_TEST
+    // -------------------------------------------------------------------------
+    //
+    //  Bootstrapping Test
+    //
+
     // alloc samples
     LweSample *a  = new_LweSample(io_lwe_params);   // for BS testing
     LweSample *id = new_LweSample(io_lwe_params);
     LweSample *gl = new_LweSample(io_lwe_params);
     LweSample *eq = new_LweSample(io_lwe_params);
-
-    const int32_t wordlen = 10;
-    LweSample *x = new_LweSample_array(wordlen,     io_lwe_params);   // for parallel addition
-    LweSample *y = new_LweSample_array(wordlen,     io_lwe_params);
-    LweSample *z = new_LweSample_array(wordlen + 1, io_lwe_params);
-
-
-    // -------------------------------------------------------------------------
-    //
-    //  Bootstrapping Test
-    //
 
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
@@ -363,7 +361,6 @@ int32_t main(int32_t argc, char **argv)
     printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < (1 << PI); i++)
-    //~ for (int32_t i = 0; false; i++)
     {
         // encrypt
         paral_sym_encr_priv(a, i - (1 << (PI-1)), tfhe_keys);
@@ -393,17 +390,37 @@ int32_t main(int32_t argc, char **argv)
     }
     printf("\n");
 
+    // cleanup
+    delete_LweSample(eq);
+    delete_LweSample(gl);
+    delete_LweSample(id);
+    delete_LweSample(a);
+#endif
 
+
+#ifdef PA_TEST
+#define PA_WLEN 10
     // -------------------------------------------------------------------------
     //
     //  Parallel Addition Test
     //
 
+    // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
+    int32_t x_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
+    int32_t y_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
+    int32_t z_plain[PA_WLEN + 1];
+
+    LweSample *x = new_LweSample_array(PA_WLEN,     io_lwe_params);   // for parallel addition
+    LweSample *y = new_LweSample_array(PA_WLEN,     io_lwe_params);
+    LweSample *z = new_LweSample_array(PA_WLEN + 1, io_lwe_params);
+
+    // init inputs
+
     // encrypt
-    for (int32_t i = 0; i < wordlen; i++)
+    for (int32_t i = 0; i < PA_WLEN; i++)
     {
-        paral_sym_encr(x + i,  2, tfhe_keys);
-        paral_sym_encr(y + i, -1, tfhe_keys);
+        paral_sym_encr(x + i, x_plain[i], tfhe_keys);
+        paral_sym_encr(y + i, y_plain[i], tfhe_keys);
     }
 
     // print inputs
@@ -411,54 +428,48 @@ int32_t main(int32_t argc, char **argv)
 
     // x
     printf(" X  | +0 ");
-    for (int32_t i = wordlen - 1; i >= 0; i--)
-    {
-        int32_t plain = paral_sym_decr(x + i, tfhe_keys);
-        printf("| %+d ", plain);
-    }
+    for (int32_t i = PA_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_plain[i]);
     printf("|\n");
 
     // y
     printf(" Y  | +0 ");
-    for (int32_t i = wordlen - 1; i >= 0; i--)
-    {
-        int32_t plain = paral_sym_decr(y + i, tfhe_keys);
-        printf("| %+d ", plain);
-    }
+    for (int32_t i = PA_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", y_plain[i]);
     printf("|\n----------------------------------------------------");fflush(stdout);
 
     // parallel addition & print
     //TODO corner cases where there are supposed to be zeros
-    for (int32_t i = 2; i < wordlen; i++)
+    for (int32_t i = 2; i < PA_WLEN; i++)
     {
         paral_add(z + i, x + i, y + i, &(tfhe_keys->cloud));
         printf("-");fflush(stdout);
     }
 
+    // decrypt
+    for (int32_t i = 0; i <= PA_WLEN; i++)
+        z_plain[i] = paral_sym_decr(z + i, tfhe_keys);
+
     // print results
     // z
     printf("\n Z  ");
-    for (int32_t i = wordlen; i >= 0; i--)
+    for (int32_t i = PA_WLEN; i >= 0; i--)
     {
-        int32_t plain = paral_sym_decr(z + i, tfhe_keys);
-        printf("| %+d ", plain);
+        printf("| %+d ", z_plain[i]);
     }
     printf("|\n------------------------------------------------------------\n");
+
+    // cleanup
+    delete_LweSample_array(PA_WLEN,     x);
+    delete_LweSample_array(PA_WLEN,     y);
+    delete_LweSample_array(PA_WLEN + 1, z);
+#endif
 
 
     // -------------------------------------------------------------------------
     //
     //  Cleanup
     //
-
-    delete_LweSample(eq);
-    delete_LweSample(gl);
-    delete_LweSample(id);
-    delete_LweSample(a);
-
-    delete_LweSample_array(wordlen,     x);
-    delete_LweSample_array(wordlen,     y);
-    delete_LweSample_array(wordlen + 1, z);
 
     delete_gate_bootstrapping_secret_keyset(tfhe_keys);
     delete_gate_bootstrapping_parameters(tfhe_params);
