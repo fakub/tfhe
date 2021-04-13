@@ -61,8 +61,112 @@ int32_t paral_sym_decr(const LweSample *sample,
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Threshold
 //
-void paral_bs_eq()
+void paral_bs_set_tv_identity(Torus32 *const tv,
+                              const int32_t N,
+                              const Torus32 MU)
 {
+    // make a stair around zero
+    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    {
+        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+        {
+            tv[i] = s * MU;
+        }
+    }
+}
+
+void paral_bs_set_tv_gleq(Torus32 *const tv,
+                          const int32_t N,
+                          const uint32_t thr,
+                          const Torus32 MU)
+{
+    // make a stair around zero
+    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    {
+        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+        {
+            tv[i] = s * MU;
+        }
+    }
+}
+
+void paral_bs_set_tv_eq(Torus32 *const tv,
+                        const int32_t N,
+                        const uint32_t thr,
+                        const Torus32 MU)
+{
+    // make a stair around zero
+    for (int32_t i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (int32_t i = N - (N >> PI); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    for (int s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    {
+        for (int32_t i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+        {
+            tv[i] = s * MU;
+        }
+    }
+}
+
+void paral_bs_priv(LweSample *result,
+                   const LweSample *sample,
+                   const TFheGateBootstrappingCloudKeySet *bk,
+                   const TorusPolynomial *testvect)
+{
+    const LweBootstrappingKeyFFT *bkFFT = bk->bkFFT;
+    LweSample *tmp = new_LweSample(&bkFFT->accum_params->extracted_lweparams);
+
+    //  Bootstrapping BEGIN   --------------------------------------------------
+    const TGswParams *bk_params = bkFFT->bk_params;
+    const int32_t N = bkFFT->accum_params->N;
+    const int32_t n = bkFFT->in_out_params->n;
+    int32_t *bara = new int32_t[N];
+
+    // Modulus switching
+    int32_t barb = modSwitchFromTorus32(sample->b, 2*N);
+    for (int32_t i = 0; i < n; i++)
+        bara[i] = modSwitchFromTorus32(sample->a[i], 2*N);
+
+    // Blind rotation and sample extraction
+    tfhe_blindRotateAndExtract_FFT(tmp, testvect, bkFFT->bkFFT, barb, bara, n, bk_params);
+    //FUCKUP #02:   TFheGateBootstrappingCloudKeySet has member 'bkFFT',
+    //              which is LweBootstrappingKeyFFT, which also has member 'bkFFT', which is TGswSampleFFT
+
+    delete[] bara;
+    //  Bootstrapping END   ----------------------------------------------------
+
+    // Key switching
+    lweKeySwitch(result, bkFFT->ks, tmp);
+
+    delete_LweSample(tmp);
+}
+
+void paral_bs_id(LweSample *result,
+                 const LweSample *sample,
+                 const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const int32_t N = bk->bkFFT->accum_params->N;
+    const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    paral_bs_set_tv_identity(&testvect->coefsT[0], N, MU);
+
+    // call BS priv
+    paral_bs_priv(result, sample, bk, testvect);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
 }
 
 void paral_bs_gleq(LweSample *result,
@@ -70,56 +174,38 @@ void paral_bs_gleq(LweSample *result,
                    const uint32_t thr,
                    const TFheGateBootstrappingCloudKeySet *bk)
 {
-    const LweBootstrappingKeyFFT *bkFFT = bk->bkFFT;
-    LweSample *tmp = new_LweSample(&bkFFT->accum_params->extracted_lweparams);
+    // get N, MU
+    const int32_t N = bk->bkFFT->accum_params->N;
     const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
-
-    //  Bootstrapping BEGIN   --------------------------------------------------
-
-    const TGswParams *bk_params = bkFFT->bk_params;
-    const TLweParams *accum_params = bkFFT->accum_params;
-    const LweParams *in_params = bkFFT->in_out_params;
-    const int32_t N = accum_params->N;
-    const int32_t Nx2 = 2 * N;
-    const int32_t n = in_params->n;
-
+    // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);
-    int32_t *bara = new int32_t[N];
+    paral_bs_set_tv_gleq(&testvect->coefsT[0], N, thr, MU);
 
+    // call BS priv
+    paral_bs_priv(result, sample, bk, testvect);
 
-    // Modulus switching
-    int32_t barb = modSwitchFromTorus32(sample->b, Nx2);
-    for (int32_t i = 0; i < n; i++)
-        bara[i] = modSwitchFromTorus32(sample->a[i], Nx2);
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+void paral_bs_eq(LweSample *result,
+                 const LweSample *sample,
+                 const uint32_t thr,
+                 const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const int32_t N = bk->bkFFT->accum_params->N;
+    const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
 
     // init test vector with stair-case function
-    for (int32_t i = 0*N/16;        i < 0*N/8 + N/16; i++) testvect->coefsT[i] = 0*MU;
-    for (int32_t i = 7*N/8 + N/16;  i < 8*N/8       ; i++) testvect->coefsT[i] = 0*MU;
-    for (int32_t i = 1*N/8 - N/16;  i < 1*N/8 + N/16; i++) testvect->coefsT[i] = 1*MU;
-    for (int32_t i = 2*N/8 - N/16;  i < 2*N/8 + N/16; i++) testvect->coefsT[i] = 2*MU;
-    for (int32_t i = 3*N/8 - N/16;  i < 3*N/8 + N/16; i++) testvect->coefsT[i] = 3*MU;
-    for (int32_t i = 4*N/8 - N/16;  i < 4*N/8 + N/16; i++) testvect->coefsT[i] = 4*MU;
-    for (int32_t i = 5*N/8 - N/16;  i < 5*N/8 + N/16; i++) testvect->coefsT[i] = 5*MU;
-    for (int32_t i = 6*N/8 - N/16;  i < 6*N/8 + N/16; i++) testvect->coefsT[i] = 6*MU;
-    for (int32_t i = 7*N/8 - N/16;  i < 7*N/8 + N/16; i++) testvect->coefsT[i] = 7*MU;
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    paral_bs_set_tv_eq(&testvect->coefsT[0], N, thr, MU);
 
-    // Blind rotation and sample extraction
-    tfhe_blindRotateAndExtract_FFT(tmp, testvect, bkFFT->bkFFT, barb, bara, n, bk_params);
-    //FUCKUP #02:   TFheGateBootstrappingCloudKeySet has member 'bkFFT',
-    //              which is LweBootstrappingKeyFFT, which also has member 'bkFFT', which is TGswSampleFFT
+    // call BS priv
+    paral_bs_priv(result, sample, bk, testvect);
 
-
-    delete[] bara;
+    // delete test vector
     delete_TorusPolynomial(testvect);
-
-    //  Bootstrapping END   ----------------------------------------------------
-
-
-    // Key switching
-    lweKeySwitch(result, bkFFT->ks, tmp);
-
-    delete_LweSample(tmp);
 }
 
 
@@ -217,8 +303,16 @@ int32_t main(int32_t argc, char **argv)
     TFheGateBootstrappingSecretKeySet *tfhe_keys = new_random_gate_bootstrapping_secret_keyset(tfhe_params);
     // alloc samples
     LweSample *x = new_LweSample(io_lwe_params);
-    LweSample *y = new_LweSample(io_lwe_params);
-    LweSample *r = new_LweSample(io_lwe_params);
+    //~ LweSample *y = new_LweSample(io_lwe_params);
+    //~ LweSample *r = new_LweSample(io_lwe_params);
+    LweSample *id = new_LweSample(io_lwe_params);
+    LweSample *gl = new_LweSample(io_lwe_params);
+    LweSample *eq = new_LweSample(io_lwe_params);
+
+    // print table heading
+    printf("--------------------------------------------------------------------------------\n");
+    printf(" Encr -> Decr  | Id. | <> 3 | == 2 |\n");
+    printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < 16; i++)
     {
@@ -226,14 +320,19 @@ int32_t main(int32_t argc, char **argv)
         paral_sym_encr_priv(x, i - 8, tfhe_keys);
 
         // bootstrap
-        paral_bs_gleq(r, x, 3, &(tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
+        paral_bs_id  (id, x,    &(tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
+        paral_bs_gleq(gl, x, 3, &(tfhe_keys->cloud));
+        paral_bs_eq  (eq, x, 2, &(tfhe_keys->cloud));
 
         // decrypt
-        int32_t x_plain = paral_sym_decr(x, tfhe_keys);
-        int32_t r_plain = paral_sym_decr(r, tfhe_keys);
+        int32_t x_plain     = paral_sym_decr(x,  tfhe_keys);
+        int32_t id_plain    = paral_sym_decr(id, tfhe_keys);
+        int32_t gl_plain    = paral_sym_decr(gl, tfhe_keys);
+        int32_t eq_plain    = paral_sym_decr(eq, tfhe_keys);
 
-        printf("D[E(%+d)] = %+d .. bootstrapped to %+d\n", i-8, x_plain, r_plain);
+        printf(" D[E(%+d)] = %+d |  %+d |  %+d  |  %+d  |\n", i-8, x_plain, id_plain, gl_plain, eq_plain);
     }
+    printf("\n");
 
     //~ cout << "starting bootstrapping ..." << endl;
 
@@ -251,8 +350,11 @@ int32_t main(int32_t argc, char **argv)
     //~ cout << "r = x + y ... " << r_plain << " = " << x_plain << " + " << y_plain << endl;
 
     // cleanup
-    delete_LweSample(r);
-    delete_LweSample(y);
+    delete_LweSample(eq);
+    delete_LweSample(gl);
+    delete_LweSample(id);
+    //~ delete_LweSample(r);
+    //~ delete_LweSample(y);
     delete_LweSample(x);
 
     delete_gate_bootstrapping_secret_keyset(tfhe_keys);
