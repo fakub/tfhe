@@ -25,12 +25,14 @@ set(RUNTIME_LIBS tfhe-nayuki-portable)
 
 #   list of examples to build
 set(CPP_EXAMPLES
-        example-orig-addition-boot
-        example-parallel-addition
+        orig-addition-boot
+        parallel-addition
         )
 
 #   build an executable for each example
 foreach (CPP_EXAMPLE ${CPP_EXAMPLES})
-    add_executable(${CPP_EXAMPLE}-nayuki-portable ${CPP_EXAMPLE}.cpp ${TFHE_HEADERS})
+    add_subdirectory(${CPP_EXAMPLE}-src)
+    include_directories(${CPP_EXAMPLE}-src)
+    add_executable(${CPP_EXAMPLE}-nayuki-portable ${CPP_EXAMPLE}.cpp ${SRCS} ${TFHE_HEADERS})
     target_link_libraries(${CPP_EXAMPLE}-nayuki-portable ${RUNTIME_LIBS})
 endforeach (CPP_EXAMPLE)
