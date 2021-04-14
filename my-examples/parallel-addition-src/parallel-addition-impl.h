@@ -64,41 +64,6 @@ int32_t paral_sym_decr(const LweSample *sample,
  *  @brief          Description
  *
  */
-void paral_bs_set_tv_identity(Torus32 *const tv,
-                              const uint32_t N,
-                              const Torus32 MU);
-
-/**
- *  @brief          Description
- *
- */
-void paral_bs_set_tv_gleq(Torus32 *const tv,
-                          const uint32_t N,
-                          const uint32_t thr,
-                          const Torus32 MU);
-
-/**
- *  @brief          Description
- *
- */
-void paral_bs_set_tv_eq(Torus32 *const tv,
-                        const uint32_t N,
-                        const uint32_t thr,
-                        const Torus32 MU);
-
-/**
- *  @brief          Description
- *
- */
-void paral_bs_priv(LweSample *result,
-                   const LweSample *sample,
-                   const TFheGateBootstrappingCloudKeySet *bk,
-                   const TorusPolynomial *testvect);
-
-/**
- *  @brief          Description
- *
- */
 void paral_bs_id(LweSample *result,
                  const LweSample *sample,
                  const TFheGateBootstrappingCloudKeySet *bk);
@@ -120,15 +85,6 @@ void paral_bs_eq(LweSample *result,
                  const LweSample *sample,
                  const uint32_t thr,
                  const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void paral_calc_qi(LweSample *qi,
-                   const LweSample *w_i0,
-                   const LweSample *w_i1,
-                   const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
  *  @brief          Description

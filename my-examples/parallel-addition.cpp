@@ -15,7 +15,7 @@
 
 #include <parallel-addition-impl.h>
 
-//~ #define BS_TEST
+#define BS_TEST
 #define PA_TEST
 
 using namespace std;
@@ -110,8 +110,6 @@ int32_t main(int32_t argc, char **argv)
     LweSample *y = new_LweSample_array(PA_WLEN,     io_lwe_params);
     LweSample *z = new_LweSample_array(PA_WLEN + 1, io_lwe_params);
 
-    // init inputs
-
     // encrypt
     for (int32_t i = 0; i < PA_WLEN; i++)
     {
@@ -134,8 +132,7 @@ int32_t main(int32_t argc, char **argv)
         printf("| %+d ", y_plain[i]);
     printf("|\n----------------------------------------------------");fflush(stdout);
 
-    // parallel addition & print
-    //TODO corner cases where there are supposed to be zeros
+    // parallel addition
     parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));
 
     // decrypt

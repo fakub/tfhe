@@ -11,6 +11,55 @@
 #include <parallel-addition-impl.h>
 
 
+// Static Function Prototypes   ------------------------------------------------
+
+/**
+ *  @brief          Description
+ *
+ */
+static void paral_bs_set_tv_identity(Torus32 *const tv,
+                                     const uint32_t N,
+                                     const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void paral_bs_set_tv_gleq(Torus32 *const tv,
+                                 const uint32_t N,
+                                 const uint32_t thr,
+                                 const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void paral_bs_set_tv_eq(Torus32 *const tv,
+                               const uint32_t N,
+                               const uint32_t thr,
+                               const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void paral_bs_priv(LweSample *result,
+                          const LweSample *sample,
+                          const TFheGateBootstrappingCloudKeySet *bk,
+                          const TorusPolynomial *testvect);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void paral_calc_qi(LweSample *qi,
+                          const LweSample *w_i0,
+                          const LweSample *w_i1,
+                          const TFheGateBootstrappingCloudKeySet *bk);
+
+
+// Function Implementations   --------------------------------------------------
+
 void die_soon(const char* message)
 {
     fprintf(stderr, "(!) %s\n    Aborting ...\n", message);
@@ -23,6 +72,7 @@ void parallel_add(LweSample *z,
                   const uint32_t wlen,
                   const TFheGateBootstrappingCloudKeySet *bk)
 {
+    //TODO corner cases where there are supposed to be zeros
     for (uint32_t i = 2; i < wlen; i++)
     {
         paral_add(z + i, x + i, y + i, bk);
@@ -69,9 +119,9 @@ int32_t paral_sym_decr(const LweSample *sample,
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Threshold
 //
-void paral_bs_set_tv_identity(Torus32 *const tv,
-                              const uint32_t N,
-                              const Torus32 MU)
+static void paral_bs_set_tv_identity(Torus32 *const tv,
+                                     const uint32_t N,
+                                     const Torus32 MU)
 {
     uint32_t i, s;
 
@@ -87,10 +137,10 @@ void paral_bs_set_tv_identity(Torus32 *const tv,
     }
 }
 
-void paral_bs_set_tv_gleq(Torus32 *const tv,
-                          const uint32_t N,
-                          const uint32_t thr,
-                          const Torus32 MU)
+static void paral_bs_set_tv_gleq(Torus32 *const tv,
+                                 const uint32_t N,
+                                 const uint32_t thr,
+                                 const Torus32 MU)
 {
     if ((thr > (1 << (PI - 2))) || thr == 0)
         die_soon("Threshold for bootstrapping too large or zero.");
@@ -122,10 +172,10 @@ void paral_bs_set_tv_gleq(Torus32 *const tv,
     }
 }
 
-void paral_bs_set_tv_eq(Torus32 *const tv,
-                        const uint32_t N,
-                        const uint32_t thr,
-                        const Torus32 MU)
+static void paral_bs_set_tv_eq(Torus32 *const tv,
+                               const uint32_t N,
+                               const uint32_t thr,
+                               const Torus32 MU)
 {
     if ((thr > (1 << (PI - 2))) || thr == 0)
         die_soon("Threshold for bootstrapping too large or zero.");
@@ -152,10 +202,10 @@ void paral_bs_set_tv_eq(Torus32 *const tv,
         tv[i] = 1 * MU;
 }
 
-void paral_bs_priv(LweSample *result,
-                   const LweSample *sample,
-                   const TFheGateBootstrappingCloudKeySet *bk,
-                   const TorusPolynomial *testvect)
+static void paral_bs_priv(LweSample *result,
+                          const LweSample *sample,
+                          const TFheGateBootstrappingCloudKeySet *bk,
+                          const TorusPolynomial *testvect)
 {
     const LweBootstrappingKeyFFT *bkFFT = bk->bkFFT;
     LweSample *tmp = new_LweSample(&bkFFT->accum_params->extracted_lweparams);
@@ -248,10 +298,10 @@ void paral_bs_eq(LweSample *result,
 // -----------------------------------------------------------------------------
 //  Helper Functions
 //
-void paral_calc_qi(LweSample *qi,
-                   const LweSample *w_i0,
-                   const LweSample *w_i1,
-                   const TFheGateBootstrappingCloudKeySet *bk)
+static void paral_calc_qi(LweSample *qi,
+                          const LweSample *w_i0,
+                          const LweSample *w_i1,
+                          const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
 
