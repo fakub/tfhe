@@ -192,19 +192,17 @@ void parallel_add(LweSample *z,
     LweSample *w = new_LweSample_array(wlen, io_lwe_params);
     LweSample *q = new_LweSample_array(wlen, io_lwe_params);
 
-            //~ uint32_t plain;
-
     // calc w_i = x_i + y_i
     for (uint32_t i = 0; i < wlen; i++)
     {
         lweCopy (w + i, x + i, io_lwe_params);
         lweAddTo(w + i, y + i, io_lwe_params);
     }
-            //~ // w
-            //~ printf(" W  ");
-            //~ for (int32_t i = PA_WLEN; i >= 0; i--)
+            //~ // print w
+            //~ printf(" W  | +0 ");
+            //~ for (int32_t i = wlen - 1; i >= 0; i--)
             //~ {
-                //~ plain = paral_sym_decr(w + i, __sk);
+                //~ plain = paral_sym_decr(w + i, sk);
                 //~ printf("| %+d ", plain);
             //~ }
             //~ printf("|\n");
@@ -217,13 +215,6 @@ void parallel_add(LweSample *z,
     {
         paral_calc_qi(q + i, w + i, w + i - 1, bk);
     }
-            //~ // q
-            //~ printf(" Q  ");
-            //~ for (int32_t i = PA_WLEN; i >= 0; i--)
-            //~ {
-                //~ printf("| %+d ", plain[i]);
-            //~ }
-            //~ printf("|\n");
 
     // calc z_i's
     // i = 0
@@ -264,15 +255,35 @@ static void bs_set_tv_identity(Torus32 *const tv,
 {
     uint32_t i, s;
 
-    // make a 0-stair around zero
+    // identity for parallel addition needs to work on the interval [-2, 2] (can be extended to [-4,4])
+    //          <-- to be set up manually ----->    <-- negacyclic extension ------>
+    //   4    |                 ————             |                                   |
+    //   3    |             ————    ————         |                                   |
+    //   2    |         ————            ————     |                                   |
+    //   1    |     ————                    ———— |    8   9  10  11  12  13  14  15  |
+    //   0 ·· | ———— ··························  |  ———— ··························· | ····
+    //  -1    |   0   1   2   3   4   5   6   7  |      ————                    ———— |
+    //  -2    |                                  |          ————            ————     |
+    //  -3    |                                  |              ————    ————         |
+    //  -4    |                                  |                  ————             |
+    //          <-- used ---------->                                <-- used ------>
+
+    // make a 0-stair around zero (and 2^(PI-1))
     for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
     for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
 
     // make other stairs
-    for (s = 1; s < (1 << (PI-1)); s++)   // due to negacyclicity, only half values are to be set
+    // from 1 to 2^(PI-2) - 1
+    for (s = 1; s < (1 << (PI-2)); s++)
     {
         for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
             tv[i] = s * MU;
+    }
+    // from 2^(PI-2) to 2^(PI-1) - 1
+    for (s = (1 << (PI-2)); s < (1 << (PI-1)); s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = (-s + (1 << (PI-1))) * MU;
     }
 }
 
@@ -434,7 +445,7 @@ static void paral_calc_zi(LweSample *zi,
         lweCopy(tmpz, w_i, io_lwe_params);
     }
 
-    // subtract 4*q_i
+    // subtract 4 q_i
     if (q_i0 != NULL)
     {
         //~ lweSubMulTo(tmpz, 4, q_i0, io_lwe_params);

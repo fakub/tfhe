@@ -103,8 +103,8 @@ int32_t main(int32_t argc, char **argv)
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
     #define PA_WLEN 10
-    int32_t x_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
-    int32_t y_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
+    int32_t x_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
+    int32_t y_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
     int32_t z_plain[PA_WLEN + 1];
 
     int64_t exp_sum = paral_eval(&x_plain[0], PA_WLEN) + paral_eval(&y_plain[0], PA_WLEN);
