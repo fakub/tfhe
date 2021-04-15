@@ -13,30 +13,48 @@
 
 #define PI 4
 
-/**
- *  @brief          Lived fast -> die soon
- *
- *  @param[in]      Message to print
- *
- */
-void die_soon(const char* message);
+
+
+// =============================================================================
+//
+//  Function Prototypes
+//
+
+
+// -----------------------------------------------------------------------------
+//  LUT Bootstrapping: Identity, Threshold, Equality
+//
 
 /**
- *  @brief          Main Parallel Addition Function
- *
- *  @param[out]     LWE Sample (length +wlen+ + 1)
- *  @param[in]      LWE Sample (length +wlen+)
- *  @param[in]      LWE Sample (length +wlen+)
- *  @param[in]      Length of LWE samples
- *  @param[in]      Bootstrapping Keys
+ *  @brief          Description
  *
  */
-void parallel_add(LweSample *z,
-                  const LweSample *x,
-                  const LweSample *y,
-                  const uint32_t wlen,
-                  const TFheGateBootstrappingCloudKeySet *bk);
+void bs_id(LweSample *result,
+           const LweSample *sample,
+           const TFheGateBootstrappingCloudKeySet *bk);
 
+/**
+ *  @brief          Description
+ *
+ */
+void bs_gleq(LweSample *result,
+             const LweSample *sample,
+             const uint32_t thr,
+             const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void bs_eq(LweSample *result,
+           const LweSample *sample,
+           const uint32_t thr,
+           const TFheGateBootstrappingCloudKeySet *bk);
+
+
+// -----------------------------------------------------------------------------
+//  En/Decryption
+//
 /**
  *  @brief          Description
  *
@@ -60,39 +78,43 @@ void paral_sym_encr(LweSample *ct,
 int32_t paral_sym_decr(const LweSample *sample,
                        const TFheGateBootstrappingSecretKeySet *sk);
 
+
+// -----------------------------------------------------------------------------
+//  Parallel Addition
+//
 /**
- *  @brief          Description
+ *  @brief          Main Parallel Addition Function
+ *
+ *  @param[out]     LWE Sample (length +wlen+ + 1)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      Length of LWE samples
+ *  @param[in]      Bootstrapping Keys
  *
  */
-void paral_bs_id(LweSample *result,
-                 const LweSample *sample,
-                 const TFheGateBootstrappingCloudKeySet *bk);
+void parallel_add(LweSample *z,
+                  const LweSample *x,
+                  const LweSample *y,
+                  const uint32_t wlen,
+                  const TFheGateBootstrappingCloudKeySet *bk);
+
+
+// -----------------------------------------------------------------------------
+//  Misc
+//
+/**
+ *  @brief          Lived fast -> die soon
+ *
+ *  @param[in]      Message to print
+ *
+ */
+void die_soon(const char* message);
 
 /**
  *  @brief          Description
  *
  */
-void paral_bs_gleq(LweSample *result,
-                   const LweSample *sample,
-                   const uint32_t thr,
-                   const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void paral_bs_eq(LweSample *result,
-                 const LweSample *sample,
-                 const uint32_t thr,
-                 const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void paral_add(LweSample *z,
-               const LweSample *x,
-               const LweSample *y,
-               const TFheGateBootstrappingCloudKeySet *bk);
+int64_t paral_eval(const int32_t *const x,
+                   const uint32_t len);
 
 #endif // #ifndef PARALLEL_ADDITION_IMPL_H

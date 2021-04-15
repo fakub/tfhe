@@ -15,7 +15,7 @@
 
 #include <parallel-addition-impl.h>
 
-#define BS_TEST
+//~ #define BS_TEST
 #define PA_TEST
 
 using namespace std;
@@ -35,6 +35,7 @@ int32_t main(int32_t argc, char **argv)
     //TODO generate appropriate params
     TFheGateBootstrappingParameterSet *tfhe_params = new_default_gate_bootstrapping_parameters(minimum_lambda);
     const LweParams *io_lwe_params = tfhe_params->in_out_params;
+    //TODO roll TFHE dice
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *tfhe_keys = new_random_gate_bootstrapping_secret_keyset(tfhe_params);
 
@@ -63,15 +64,15 @@ int32_t main(int32_t argc, char **argv)
 
         // bootstrap
         clock_t begin_id = clock();
-        paral_bs_id(id, a, &(tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
+        bs_id(id, a, &(tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        paral_bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
+        bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        paral_bs_eq(eq, a, 2, &(tfhe_keys->cloud));
+        bs_eq(eq, a, 2, &(tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
@@ -95,16 +96,18 @@ int32_t main(int32_t argc, char **argv)
 
 
 #ifdef PA_TEST
-#define PA_WLEN 10
     // -------------------------------------------------------------------------
     //
     //  Parallel Addition Test
     //
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
+    #define PA_WLEN 10
     int32_t x_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
     int32_t y_plain[PA_WLEN] = {0,1,2,0,1,2,0,1,2,0};
     int32_t z_plain[PA_WLEN + 1];
+
+    int64_t exp_sum = paral_eval(&x_plain[0], PA_WLEN) + paral_eval(&y_plain[0], PA_WLEN);
 
     LweSample *x = new_LweSample_array(PA_WLEN,     io_lwe_params);   // for parallel addition
     LweSample *y = new_LweSample_array(PA_WLEN,     io_lwe_params);
@@ -124,13 +127,13 @@ int32_t main(int32_t argc, char **argv)
     printf(" X  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
         printf("| %+d ", x_plain[i]);
-    printf("|\n");
+    printf("| %+9ld\n", paral_eval(&x_plain[0], PA_WLEN));
 
     // y
     printf(" Y  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
         printf("| %+d ", y_plain[i]);
-    printf("|\n----------------------------------------------------");fflush(stdout);
+    printf("| %+9ld\n------------------------------------------------------------\n", paral_eval(&y_plain[0], PA_WLEN));
 
     // parallel addition
     parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));
@@ -141,12 +144,16 @@ int32_t main(int32_t argc, char **argv)
 
     // print results
     // z
-    printf("\n Z  ");
+    printf(" Z  ");
     for (int32_t i = PA_WLEN; i >= 0; i--)
     {
         printf("| %+d ", z_plain[i]);
     }
-    printf("|\n------------------------------------------------------------\n");
+    printf("| %+9ld   %s (exp. %+9ld)\n",
+              paral_eval(&z_plain[0], PA_WLEN + 1),
+                      exp_sum == paral_eval(&z_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                               exp_sum);
+    printf("------------------------------------------------------------\n");
 
     // cleanup
     delete_LweSample_array(PA_WLEN,     x);
