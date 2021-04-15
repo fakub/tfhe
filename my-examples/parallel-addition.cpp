@@ -40,15 +40,15 @@ int32_t main(int32_t argc, char **argv)
 
     // with KS:
     //TODO generate appropriate TFHE params with KS
-
+                                                // orig. params
         static const int32_t N = 1024;
         static const int32_t k = 1;
-        static const int32_t n = 630;
-        static const int32_t bk_l = 3;
-        static const int32_t bk_Bgbit = 7;
+        static const int32_t n = 682;           // 630
+        static const int32_t bk_l = 21;         //   3
+        static const int32_t bk_Bgbit = 1;      //   7
         static const int32_t ks_basebit = 2;
-        static const int32_t ks_length = 8;
-        static const double ks_stdev = pow(2.,-15); // standard deviation
+        static const int32_t ks_length = 16;    //   8
+        static const double ks_stdev = pow(2.,-37); // standard deviation   // -15
         static const double bk_stdev = pow(2.,-25); // standard deviation
         static const double max_stdev = 0.012467;   // max standard deviation for a 1/4 msg space
 
