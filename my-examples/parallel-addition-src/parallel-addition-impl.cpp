@@ -154,7 +154,7 @@ void paral_sym_encr_priv(LweSample *ct,
     // scale to [-8/16, 7/16]
     //                         ___/ 8 \___     _/ mask 1111 \_     ___/ 8 \___
     Torus32 mu = (((message + (1 << (PI-1))) & ((1 << PI) - 1)) - (1 << (PI-1))) * _1s16;
-    double alpha = sk->params->in_out_params->alpha_min; //TODO: specify noise
+    double alpha = sk->params->in_out_params->alpha_min; //TODO orig: specify noise
     lweSymEncrypt(ct, mu, alpha, sk->lwe_key);
 }
 

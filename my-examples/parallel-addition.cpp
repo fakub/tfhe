@@ -6,6 +6,7 @@
 #include <sys/time.h>
 
 #include "tfhe.h"
+#include "tfhe_garbage_collector.h"
 #include "polynomials.h"
 #include "lwesamples.h"
 #include "lwekey.h"
@@ -28,14 +29,44 @@ int32_t main(int32_t argc, char **argv)
 #endif
 
     // roll dice
-    srand(time(NULL));
+    uint64_t seed = time(NULL);
+    srand(seed);
 
-    // generate TFHE params
-    int32_t minimum_lambda = 100;
-    //TODO generate appropriate params
-    TFheGateBootstrappingParameterSet *tfhe_params = new_default_gate_bootstrapping_parameters(minimum_lambda);
+    // w/o KS:
+    // for  80-bit security @ pi = 4
+    //      N =  512, n = 682, l = 20, mlogal = 23.745
+    // for 128-bit security @ pi = 4
+    //      N = 1024, n = 768, l = 20, mlogal = 24.331
+
+    // with KS:
+    //TODO generate appropriate TFHE params with KS
+
+        static const int32_t N = 1024;
+        static const int32_t k = 1;
+        static const int32_t n = 630;
+        static const int32_t bk_l = 3;
+        static const int32_t bk_Bgbit = 7;
+        static const int32_t ks_basebit = 2;
+        static const int32_t ks_length = 8;
+        static const double ks_stdev = pow(2.,-15); // standard deviation
+        static const double bk_stdev = pow(2.,-25); // standard deviation
+        static const double max_stdev = 0.012467;   // max standard deviation for a 1/4 msg space
+
+        LweParams *params_in = new_LweParams(n, ks_stdev, max_stdev);
+        TLweParams *params_accum = new_TLweParams(N, k, bk_stdev, max_stdev);
+        TGswParams *params_bk = new_TGswParams(bk_l, bk_Bgbit, params_accum);
+
+        TfheGarbageCollector::register_param(params_in);
+        TfheGarbageCollector::register_param(params_accum);
+        TfheGarbageCollector::register_param(params_bk);
+
+        TFheGateBootstrappingParameterSet *tfhe_params = new TFheGateBootstrappingParameterSet(ks_length, ks_basebit, params_in, params_bk);
+
+
     const LweParams *io_lwe_params = tfhe_params->in_out_params;
-    //TODO roll TFHE dice
+
+    // seed TFHE
+    tfhe_random_generator_setSeed((uint32_t*)(&seed), 2);
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *tfhe_keys = new_random_gate_bootstrapping_secret_keyset(tfhe_params);
 
