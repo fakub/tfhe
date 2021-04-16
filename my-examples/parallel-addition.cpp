@@ -16,7 +16,7 @@
 
 #include <parallel-addition-impl.h>
 
-//~ #define BS_TEST
+#define BS_TEST
 #define PA_TEST
 
 using namespace std;
@@ -76,6 +76,7 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Bootstrapping Test
     //
+    printf("\n    <<<<    Bootstrapping Test    >>>>\n\n");fflush(stdout);
 
     // alloc samples
     LweSample *a  = new_LweSample(io_lwe_params);   // for BS testing
@@ -131,6 +132,7 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Parallel Addition Test
     //
+    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");fflush(stdout);
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
     #define PA_WLEN 10
@@ -152,7 +154,7 @@ int32_t main(int32_t argc, char **argv)
     }
 
     // print inputs
-    printf("\n------------------------------------------------------------\n");
+    printf("------------------------------------------------------------\n");
 
     // x
     printf(" X  | +0 ");
@@ -164,7 +166,7 @@ int32_t main(int32_t argc, char **argv)
     printf(" Y  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
         printf("| %+d ", y_plain[i]);
-    printf("| %+9ld\n------------------------------------------------------------\n", paral_eval(&y_plain[0], PA_WLEN));
+    printf("| %+9ld\n------------------------------------------------------------   ", paral_eval(&y_plain[0], PA_WLEN));
 
     // parallel addition
     parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));

@@ -227,6 +227,9 @@ void parallel_add(LweSample *z,
     // i = wlen
     paral_calc_zi(z + wlen, NULL, NULL, q + wlen - 1, bk);
 
+    // progress bar end
+    printf("\n");
+
     // cleanup
     delete_LweSample_array(wlen, q);
     delete_LweSample_array(wlen, w);
@@ -398,6 +401,9 @@ static void paral_calc_qi(LweSample *qi,
     LweSample *r3 = new_LweSample(io_lwe_params);
     LweSample *r23= new_LweSample(io_lwe_params);
 
+    // progress bar ...
+    printf("-");fflush(stdout);
+
     //            r1:  w_i <=> +-3
     bs_gleq(r1,  w_i0,     3,     bk);
 
@@ -433,7 +439,7 @@ static void paral_calc_zi(LweSample *zi,
 
     // aux variables
     LweSample *tmpz = new_LweSample(io_lwe_params);
-                LweSample *tmpzz = new_LweSample(io_lwe_params);
+                //~ LweSample *tmpzz = new_LweSample(io_lwe_params);
 
     // setup with w_i (or 0)
     if (w_i == NULL)
@@ -448,11 +454,11 @@ static void paral_calc_zi(LweSample *zi,
     // subtract 4 q_i
     if (q_i0 != NULL)
     {
-        //~ lweSubMulTo(tmpz, 4, q_i0, io_lwe_params);
-                    //TODO params to allow 12 additions: 12 values are already too much for these parameters
-                    lweSubMulTo(tmpz, 2, q_i0, io_lwe_params);
-                    bs_id(tmpzz, tmpz, bk); lweCopy(tmpz, tmpzz, io_lwe_params);   // noise must be refreshed here
-                    lweSubMulTo(tmpz, 2, q_i0, io_lwe_params);
+        lweSubMulTo(tmpz, 4, q_i0, io_lwe_params);
+                    //~ //TODO params to allow 12 additions: 12 values are already too much for these parameters
+                    //~ lweSubMulTo(tmpz, 2, q_i0, io_lwe_params);
+                    //~ bs_id(tmpzz, tmpz, bk); lweCopy(tmpz, tmpzz, io_lwe_params);   // noise must be refreshed here
+                    //~ lweSubMulTo(tmpz, 2, q_i0, io_lwe_params);
     }
 
     // add q_i-1
@@ -461,11 +467,14 @@ static void paral_calc_zi(LweSample *zi,
         lweAddTo(tmpz, q_i1, io_lwe_params);
     }
 
+    // progress bar ...
+    printf("-");fflush(stdout);
+
     // bootstrap to refresh noise
     bs_id(zi, tmpz, bk);
 
     // cleanup
-                delete_LweSample(tmpzz);
+                //~ delete_LweSample(tmpzz);
     delete_LweSample(tmpz);
 }
 
