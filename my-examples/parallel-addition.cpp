@@ -93,7 +93,7 @@ int32_t main(int32_t argc, char **argv)
         //~ static const int32_t k = 1;
         //~ static const int32_t n = 520;
         //~ static const int32_t bk_l = 2;
-        //~ static const int32_t bk_Bgbit = 10;
+        //~ static const int32_t bk_Bgbit = 9;
         //~ static const int32_t ks_basebit = 1;
         //~ static const int32_t ks_length = 15;
         //~ static const double ks_stdev = pow(2.,-18); // standard deviation
