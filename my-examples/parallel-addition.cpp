@@ -119,32 +119,32 @@ int32_t main(int32_t argc, char **argv)
     //   # t = 15; l = 2; -log(a_KS_n) = 17.62; -log(a_BK_N) = 30.97    (little more than 128-bit)
 
                                                 // orig. params
-        //~ static const int32_t N = 1024;
-        //~ static const int32_t k = 1;
-        //~ static const int32_t n = 520;           // 630
-        //~ static const int32_t bk_l = 2;         //   3
-        //~ static const int32_t bk_Bgbit = 10;      //   7
-        //~ static const int32_t ks_basebit = 1;
-        //~ static const int32_t ks_length = 15;    //   8
-        //~ static const double ks_stdev = pow(2.,-18); // standard deviation   // -15
-        //~ static const double bk_stdev = pow(2.,-31); // standard deviation
-        //~ static const double max_stdev = 0.01042;    // max standard deviation for a 1/4 msg space   // 0.012467
+        static const int32_t N = 1024;
+        static const int32_t k = 1;
+        static const int32_t n = 520;           // 630
+        static const int32_t bk_l = 2;         //   3
+        static const int32_t bk_Bgbit = 10;      //   7
+        static const int32_t ks_basebit = 1;
+        static const int32_t ks_length = 15;    //   8
+        static const double ks_stdev = pow(2.,-18); // standard deviation   // -15
+        static const double bk_stdev = pow(2.,-31); // standard deviation
+        static const double max_stdev = 0.01042;    // max standard deviation for a 1/4 msg space   // 0.012467
 
     // -------------------------------------------------------------------------
     // pi = 5 ; delta2 = Math.log2(36)  ; n = 550 ; nn = 1024 ; gamma = 11
     //   # ~128-bit sec.,  n_max 682
     //   # t = 16; l = 2; -log(a_KS_n) = 18.67; -log(a_BK_N) = 33.01    (very close to >128-bit)
 
-        static const int32_t N = 1024;
-        static const int32_t k = 1;
-        static const int32_t n = 550;
-        static const int32_t bk_l = 2;
-        static const int32_t bk_Bgbit = 11;
-        static const int32_t ks_basebit = 1;
-        static const int32_t ks_length = 16;
-        static const double ks_stdev = pow(2.,-19); // standard deviation
-        static const double bk_stdev = pow(2.,-33); // standard deviation
-        static const double max_stdev = 0.005208;   // max standard deviation for a 1/4 msg space
+        //~ static const int32_t N = 1024;
+        //~ static const int32_t k = 1;
+        //~ static const int32_t n = 550;
+        //~ static const int32_t bk_l = 2;
+        //~ static const int32_t bk_Bgbit = 11;
+        //~ static const int32_t ks_basebit = 1;
+        //~ static const int32_t ks_length = 16;
+        //~ static const double ks_stdev = pow(2.,-19); // standard deviation
+        //~ static const double bk_stdev = pow(2.,-33); // standard deviation
+        //~ static const double max_stdev = 0.005208;   // max standard deviation for a 1/4 msg space
 
     // -------------------------------------------------------------------------
     // pi = 7 ; delta2 = Math.log2(74)  ; n = 682 ; nn = 4096 ; gamma = 24
