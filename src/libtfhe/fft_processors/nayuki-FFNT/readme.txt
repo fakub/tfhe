@@ -19,9 +19,9 @@ Source code
 
 To compile, use one of these commands:
 
-    gcc -O1 -o fft-test fft-test.c fft-portable.c -lm
-    gcc -O1 -o fft-test fft-test.c fft-x8664-avx-aux.c fft-x8664-avx.s -lm
-    gcc -O1 -o fft-test fft-test.c fft-x8664-avx-aux.c fft-model-of-x8664-avx.c -lm
+    .../tfhe/build$ gcc -O1 -o ffnt-test ../src/libtfhe/fft_processors/nayuki-FFNT/ffnt-test.c ../src/libtfhe/fft_processors/nayuki-FFNT/fft-portable.c -lm
+    # gcc -O1 -o fft-test fft-test.c fft-x8664-avx-aux.c fft-x8664-avx.s -lm
+    # gcc -O1 -o fft-test fft-test.c fft-x8664-avx-aux.c fft-model-of-x8664-avx.c -lm
 
 License: MIT (open source)
 

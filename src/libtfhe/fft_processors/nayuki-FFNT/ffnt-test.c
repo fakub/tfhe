@@ -45,12 +45,15 @@ static void *memdup(const void *src, size_t n);
 
 /*---- Function implementations ----*/
 
-int32_t main(int32_t argc, char **argv) {
+int32_t main(int32_t argc, char **argv)
+{
     // Self-test to check correct computation of values
     srand(time(NULL));
     int32_t i;
-    for (i = 2; i <= 10; i++) {  // Test FFT sizes 4, 8, 16, ..., 512, 1024
-        if (test_fft_log_error(1 << i) > -10) {
+    for (i = 2; i <= 10; i++)    // Test FFT sizes 4, 8, 16, ..., 512, 1024
+    {
+        if (test_fft_log_error(1 << i) > -10)
+        {
             printf("Self-test failed\n");
             return 1;
         }
@@ -62,19 +65,22 @@ int32_t main(int32_t argc, char **argv) {
     const int32_t TRIALS = 10;
     printf("%9s    %s\n", "Size", "Time per FFT (ns)");
     size_t n;
-    for (n = 4; n <= (size_t)1 << 26; n *= 2) {
+    for (n = 4; n <= (size_t)1 << 26; n *= 2)
+    {
         // Initialize data sets
         void *fftTables = fft_init(n);
         double *real = random_reals(n);
         double *imag = random_reals(n);
-        if (fftTables == NULL || real == NULL || imag == NULL) {
+        if (fftTables == NULL || real == NULL || imag == NULL)
+        {
             printf("Memory allocation failed\n");
             return 1;
         }
 
         // Determine number of iterations to run to spend TARGET_TIME
         uint64_t iterations = 1;
-        while (1) {
+        while (1)
+        {
             int64_t time = benchmark_time(fftTables, real, imag, iterations);
             if (time >= TARGET_TIME) {
                 iterations = (uint64_t)((double)TARGET_TIME / time * iterations + 0.5);
@@ -90,14 +96,15 @@ int32_t main(int32_t argc, char **argv) {
         int32_t i;
         for (i = 0; i < TRIALS; i++)
             runtimes[i] = (double)benchmark_time(fftTables, real, imag, iterations) / iterations;
-        fft_destroy(fftTables);
+        tables_destroy(fftTables);
         free(real);
         free(imag);
 
         // Compute statistics
         double min = 1e300;
         double sum = 0;
-        for (i = 0; i < TRIALS; i++) {
+        for (i = 0; i < TRIALS; i++)
+        {
             double t = runtimes[i];
             if (t < min)
                 min = t;
@@ -111,7 +118,7 @@ int32_t main(int32_t argc, char **argv) {
         }
         double stddev = sqrt(sqrdiffsum / TRIALS);
         free(runtimes);
-        printf("%9zu    min=%"PRIu64"  mean=%"PRIu64"  sd=%.2f%%\n",
+        printf("%9zu    min = %10"PRIu64"  mean = %10"PRIu64"  sd=%.2f%%\n",
             n, (uint64_t)(min + 0.5), (uint64_t)(mean + 0.5), stddev / mean * 100);
     }
     return 0;
@@ -137,7 +144,7 @@ static double test_fft_log_error(int32_t n) {
     if (fftTables == NULL)
         return 99;
     fft_transform(fftTables, actualoutreal, actualoutimag);
-    fft_destroy(fftTables);
+    tables_destroy(fftTables);
     double result = log10_rms_err(refoutreal, refoutimag, actualoutreal, actualoutimag, n);
 
     free(inputreal);
