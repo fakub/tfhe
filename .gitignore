@@ -2,3 +2,5 @@ callgrind.*
 .*.swp
 *.o
 doc
+bin
+build
