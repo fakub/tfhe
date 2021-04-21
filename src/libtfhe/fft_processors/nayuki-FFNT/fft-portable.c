@@ -28,35 +28,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fft.h"
+#include "ffnt.h"
 
-
-
-// ===   Data types   ==========================================================
-
-/*******************************************************************************
- * Type of tables.
- * */
-typedef enum {
-    FFT_e   = 0,
-    IFFT_e  = 1,
-} transform_t;
-
-/*******************************************************************************
- * Structure that holds FFT tables.
- * */
-typedef struct FftTables
-{
-    transform_t type;
-    size_t n;
-    size_t cos_denom;
-    size_t tgt_size;
-    size_t * bit_reversed;
-    double * cos_table;
-    double * sin_table;
-    double * ct_path_tables;
-    double * gs_path_tables;
-} FftTables;
+// M_PI isn't defined with C99 for whatever reason
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 
 
@@ -746,142 +723,18 @@ static size_t reverse_bits(size_t x, uint32_t n)
 
 // ---   Destroy tables   ------------------------------------------------------
 
-void tables_destroy(FftTables *const tables)
+void tables_destroy(void *const tables)
 {
     if (tables == NULL)
         return;
-    free(tables->bit_reversed);
-    free(tables->cos_table);
-    free(tables->sin_table);
-    free(tables->ct_path_tables);
-    free(tables->gs_path_tables);
-    memset(tables, 0, sizeof(FftTables));
-    free(tables);
-}
 
+    FftTables * fft_tables = (FftTables *)tables;
 
-
-
-
-
-
-
-
-/*---- Function implementations ----*/
-
-// Returns a pointer to an opaque structure of FFT tables. n must be a power of 2.
-void *fft_init(size_t n) {
-	// Check size argument
-	if (n <= 0 || (n & (n - 1)) != 0)
-		return NULL;  // Error: Size is not a power of 2
-	if (n / 2 > SIZE_MAX / sizeof(double) || n > SIZE_MAX / sizeof(size_t))
-		return NULL;  // Error: Size is too large, which makes memory allocation impossible
-
-	// Allocate structure
-	struct FftTables *tables = malloc(sizeof(struct FftTables));
-	if (tables == NULL)
-		return NULL;
-	tables->n = n;
-
-	// Allocate arrays
-	tables->bit_reversed = malloc(n * sizeof(size_t));
-	tables->cos_table = malloc(n / 2 * sizeof(double));
-	tables->sin_table = malloc(n / 2 * sizeof(double));
-	if (tables->bit_reversed == NULL || tables->cos_table == NULL || tables->sin_table == NULL) {
-		free(tables->bit_reversed);
-		free(tables->cos_table);
-		free(tables->sin_table);
-		free(tables);
-		return NULL;
-	}
-
-	// Precompute values and store to tables
-	size_t i;
-	int32_t levels = floor_log2(n);
-	for (i = 0; i < n; i++)
-		tables->bit_reversed[i] = reverse_bits(i, levels);
-	for (i = 0; i < n / 2; i++) {
-		double angle = 2 * M_PI * i / n;
-		tables->cos_table[i] = cos(angle);
-		tables->sin_table[i] = sin(angle);
-	}
-	return tables;
-}
-
-
-// Performs a forward FFT in place on the given arrays. The length is given by the tables struct.
-void fft_transform(const void *tables, double *real, double *imag) {
-	struct FftTables *tbl = (struct FftTables *)tables;
-	size_t n = tbl->n;
-
-	// Bit-reversed addressing permutation
-	size_t *bitreversed = tbl->bit_reversed;
-	size_t i;
-	for (i = 0; i < n; i++) {
-		size_t j = bitreversed[i];
-		if (i < j) {
-			double tp0re = real[i];
-			double tp0im = imag[i];
-			double tp1re = real[j];
-			double tp1im = imag[j];
-			real[i] = tp1re;
-			imag[i] = tp1im;
-			real[j] = tp0re;
-			imag[j] = tp0im;
-		}
-	}
-
-	// Cooley-Tukey decimation-in-time radix-2 FFT
-	double *costable = tbl->cos_table;
-	double *sintable = tbl->sin_table;
-	size_t size;
-	for (size = 2; size <= n; size *= 2) {
-		size_t halfsize = size / 2;
-		size_t tablestep = n / size;
-		for (i = 0; i < n; i += size) {
-			size_t j, k;
-			for (j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
-				double tpre =  real[j+halfsize] * costable[k] + imag[j+halfsize] * sintable[k];
-				double tpim = -real[j+halfsize] * sintable[k] + imag[j+halfsize] * costable[k];
-				real[j + halfsize] = real[j] - tpre;
-				imag[j + halfsize] = imag[j] - tpim;
-				real[j] += tpre;
-				imag[j] += tpim;
-			}
-		}
-		if (size == n)  // Prevent overflow in 'size *= 2'
-			break;
-	}
-}
-
-
-// Deallocates the given structure of FFT tables.
-void fft_destroy(void *tables) {
-	if (tables == NULL)
-		return;
-	struct FftTables *tbl = (struct FftTables *)tables;
-	free(tbl->bit_reversed);
-	free(tbl->cos_table);
-	free(tbl->sin_table);
-	memset(tbl, 0, sizeof(struct FftTables));  // Prevent accidental memory reuse
-	free(tbl);
-}
-
-
-// Returns the largest i such that 2^i <= n.
-static int32_t floor_log2(size_t n) {
-	int32_t result = 0;
-	for (; n > 1; n /= 2)
-		result++;
-	return result;
-}
-
-
-// Returns the bit reversal of the n-bit unsigned integer x.
-static size_t reverse_bits(size_t x, uint32_t n) {
-	size_t result = 0;
-	uint32_t i;
-	for (i = 0; i < n; i++, x >>= 1)
-		result = (result << 1) | (x & 1);
-	return result;
+    free(fft_tables->bit_reversed);
+    free(fft_tables->cos_table);
+    free(fft_tables->sin_table);
+    free(fft_tables->ct_path_tables);
+    free(fft_tables->gs_path_tables);
+    memset(fft_tables, 0, sizeof(FftTables));
+    free(fft_tables);
 }

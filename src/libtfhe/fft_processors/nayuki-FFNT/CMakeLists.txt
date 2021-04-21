@@ -4,8 +4,7 @@ cmake_minimum_required(VERSION 3.0)
 enable_language(ASM)
 
 set(SRCS_PORTABLE
-    fft-x8664-avx-aux.c
-    fft-model-of-x8664-avx.c
+    fft-portable.c
     fft_processor_nayuki_FFNT.cpp
     lagrangehalfc_impl.cpp
     )
@@ -19,7 +18,7 @@ set(SRCS_AVX
     )
 
 set(HEADERS
-    fft.h
+    ffnt.h
     lagrangehalfc_impl.h
     )
 
@@ -29,6 +28,7 @@ if (ENABLE_NAYUKI_FFNT_PORTABLE)
 endif (ENABLE_NAYUKI_FFNT_PORTABLE)
 
 if (ENABLE_NAYUKI_FFNT_AVX)
-    add_library(tfhe-fft-nayuki-FFNT-avx OBJECT ${SRCS_AVX} ${HEADERS})
-    set_property(TARGET tfhe-fft-nayuki-FFNT-avx PROPERTY POSITION_INDEPENDENT_CODE ON)
+    message( SEND_ERROR "Nayuki-FFNT processor not yet implemented." )
+    #~ add_library(tfhe-fft-nayuki-FFNT-avx OBJECT ${SRCS_AVX} ${HEADERS})
+    #~ set_property(TARGET tfhe-fft-nayuki-FFNT-avx PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif (ENABLE_NAYUKI_FFNT_AVX)

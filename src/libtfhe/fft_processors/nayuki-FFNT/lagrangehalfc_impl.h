@@ -4,29 +4,33 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
-// typedef double _Complex cplx;
-typedef std::complex< double > cplx; // https://stackoverflow.com/a/31800404
+
 #include "tfhe.h"
 #include "polynomials.h"
 
-class FFT_Processor_nayuki_FFNT {
-    public:
-    const int32_t _2N;
-    const int32_t N;
-    const int32_t Ns2;
-    private:
-    double* real_inout;
-    double* imag_inout;
-    void* tables_direct;
-    void* tables_reverse;
-    public:
-    cplx* omegaxminus1;
+// typedef double _Complex cplx;
+typedef std::complex< double > cplx; // https://stackoverflow.com/a/31800404
 
-    FFT_Processor_nayuki_FFNT(const int32_t N);
-    void execute_reverse_int(cplx* res, const int32_t* a);
-    void execute_reverse_torus32(cplx* res, const Torus32* a);
-    void execute_direct_torus32(Torus32* res, const cplx* a);
-    ~FFT_Processor_nayuki_FFNT();
+class FFT_Processor_nayuki_FFNT
+{
+    public:
+        const int32_t _2N;
+        const int32_t N;
+        const int32_t Ns2;
+    private:
+        double * real_inout;
+        double * imag_inout;
+        void * ffnt_tables_2N;
+        void * ffnt_tables_N_2;
+        void * iffnt_tables_N_2;
+    public:
+        cplx * omegaxminus1;
+
+        FFT_Processor_nayuki_FFNT(const int32_t N);
+        void execute_reverse_int(cplx* res, const int32_t* a);
+        void execute_reverse_torus32(cplx* res, const Torus32* a);
+        void execute_direct_torus32(Torus32* res, const cplx* a);
+        ~FFT_Processor_nayuki_FFNT();
 };
 
 extern thread_local FFT_Processor_nayuki_FFNT fp1024_nayuki_FFNT;
@@ -39,8 +43,8 @@ extern thread_local FFT_Processor_nayuki_FFNT fp1024_nayuki_FFNT;
  */
 struct LagrangeHalfCPolynomial_IMPL
 {
-   cplx* coefsC;
-   FFT_Processor_nayuki_FFNT* proc;
+   cplx * coefsC;
+   FFT_Processor_nayuki_FFNT * proc;
 
    LagrangeHalfCPolynomial_IMPL(int32_t N);
    ~LagrangeHalfCPolynomial_IMPL();
