@@ -20,7 +20,7 @@ FFT_Processor_nayuki_FFNT::FFT_Processor_nayuki_FFNT(const int32_t N)
     omegaxminus1 = (cplx *)malloc(sizeof(cplx) * _2N);
     for (int32_t x = 0; x < _2N; x++)
     {
-        omegaxminus1[x]=cplx(cos(x*M_PI/N)-1., sin(x*M_PI/N));
+        omegaxminus1[x] = cplx(cos(x*M_PI/N)-1., -sin(x*M_PI/N));
         // instead of cos(x*M_PI/N)-1. + sin(x*M_PI/N) * 1i
         // exp(i.x.pi/N)-1
     }

@@ -4,6 +4,7 @@
 LagrangeHalfCPolynomial_IMPL::LagrangeHalfCPolynomial_IMPL(const int32_t N)
 {
     assert(N == 1024);
+    //TODO change this to two arrays
     coefsC = new cplx[N/2];
     proc = &fp1024_nayuki_FFNT;
 }
@@ -86,8 +87,26 @@ EXPORT void LagrangeHalfCPolynomialSetXaiMinusOne(LagrangeHalfCPolynomial * resu
     const int32_t _2N = result1->proc->_2N;
     const cplx* omegaxminus1 = result1->proc->omegaxminus1;
 
-    for (int32_t i=0; i<Ns2; i++)
-        result1->coefsC[i]=omegaxminus1[((2*i+1)*ai)%_2N];
+    // pre-calculated FFNT image of X^a - 1
+    if (ai >= Ns2)
+    {
+        for (int32_t k = 0; k < Ns2; k++)
+            result1->coefsC[k] = omegaxminus1[(ai*(4*k-1)) % _2N];
+    }
+    else
+    {
+        for (int32_t k = 0; k < Ns2; k++)
+            result1->coefsC[k] = omegaxminus1[(4*ai*k - _2N * k - ai) % _2N];
+    }
+
+    //  originally:
+    //  pre-calculated FFT image of negacyclic extension of X^a - 1
+    //  i.e., -X^{N+a} + X^N + X^a - 1
+    //  which is 0 for k odd
+    //  in their implementation of LagrangeHalfCPolynomial, even positions are omitted
+    //  => coeff[i] = omega[2*i+1]
+    //~ for (int32_t k=0; k<Ns2; k++)
+        //~ result1->coefsC[k]=omegaxminus1[((2*k+1)*ai)%_2N];
 }
 
 /** termwise multiplication in Lagrange space */
