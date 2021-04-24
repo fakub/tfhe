@@ -22,22 +22,23 @@ include_directories("../bin/include/tfhe")
 file(GLOB TFHE_HEADERS ../bin/include/tfhe/*.h)
 link_directories("../bin/lib")
 
-#~ set(RUNTIME_LIBS tfhe-nayuki-FFNT-portable)
-set(RUNTIME_LIBS tfhe-nayuki-portable)
+set(RUNTIME_LIBS tfhe-nayuki-FFNT-portable)
+#~ set(RUNTIME_LIBS tfhe-nayuki-portable)
 
 #   list of examples to build
 set(CPP_EXAMPLES
-        orig-addition-boot
-        parallel-addition
+        #~ orig-addition-boot
+        #~ parallel-addition
+        ffnt-error-hunt
         )
 
 #   build an executable for each example
 foreach (CPP_EXAMPLE ${CPP_EXAMPLES})
-    add_subdirectory(${CPP_EXAMPLE}-src)
-    include_directories(${CPP_EXAMPLE}-src)
+    #~ add_subdirectory(${CPP_EXAMPLE}-src)
+    #~ include_directories(${CPP_EXAMPLE}-src)
 
-    #~ add_executable(${CPP_EXAMPLE}-nayuki-FFNT-portable ${CPP_EXAMPLE}.cpp ${SRCS} ${TFHE_HEADERS})
-    #~ target_link_libraries(${CPP_EXAMPLE}-nayuki-FFNT-portable ${RUNTIME_LIBS})
-    add_executable(${CPP_EXAMPLE}-nayuki-portable ${CPP_EXAMPLE}.cpp ${SRCS} ${TFHE_HEADERS})
-    target_link_libraries(${CPP_EXAMPLE}-nayuki-portable ${RUNTIME_LIBS})
+    add_executable(${CPP_EXAMPLE}-nayuki-FFNT-portable ${CPP_EXAMPLE}.cpp ${SRCS} ${TFHE_HEADERS})
+    target_link_libraries(${CPP_EXAMPLE}-nayuki-FFNT-portable ${RUNTIME_LIBS})
+    #~ add_executable(${CPP_EXAMPLE}-nayuki-portable ${CPP_EXAMPLE}.cpp ${SRCS} ${TFHE_HEADERS})
+    #~ target_link_libraries(${CPP_EXAMPLE}-nayuki-portable ${RUNTIME_LIBS})
 endforeach (CPP_EXAMPLE)
