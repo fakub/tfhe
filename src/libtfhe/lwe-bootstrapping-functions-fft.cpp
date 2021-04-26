@@ -42,7 +42,7 @@ EXPORT void init_LweBootstrappingKeyFFT(LweBootstrappingKeyFFT *obj, const LweBo
         }
     }
 
-    // Bootstrapping Key FFT 
+    // Bootstrapping Key FFT
     TGswSampleFFT *bkFFT = new_TGswSampleFFT_array(n, bk_params);
     for (int32_t i = 0; i < n; ++i) {
         tGswToFFTConvert(&bkFFT[i], &bk->bk[i], bk_params);
@@ -137,7 +137,7 @@ EXPORT void tfhe_blindRotateAndExtract_FFT(LweSample *result,
     const int32_t N = accum_params->N;
     const int32_t _2N = 2 * N;
 
-    // Test polynomial 
+    // Test polynomial
     TorusPolynomial *testvectbis = new_TorusPolynomial(N);
     // Accumulator
     TLweSample *acc = new_TLweSample(accum_params);
