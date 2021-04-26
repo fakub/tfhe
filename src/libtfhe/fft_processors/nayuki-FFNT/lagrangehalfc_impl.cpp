@@ -79,6 +79,8 @@ EXPORT void LagrangeHalfCPolynomialAddTorusConstant(LagrangeHalfCPolynomial * re
         b[j]+=muc;
 }
 
+// not used yet, not tested either (but modified according to FFNT transform)
+/*
 EXPORT void LagrangeHalfCPolynomialSetXaiMinusOne(LagrangeHalfCPolynomial * result,
                                                   const int32_t ai)
 {
@@ -105,9 +107,10 @@ EXPORT void LagrangeHalfCPolynomialSetXaiMinusOne(LagrangeHalfCPolynomial * resu
     //  which is 0 for k odd
     //  in their implementation of LagrangeHalfCPolynomial, even positions are omitted
     //  => coeff[i] = omega[2*i+1]
-    //~ for (int32_t k=0; k<Ns2; k++)
-        //~ result1->coefsC[k]=omegaxminus1[((2*k+1)*ai)%_2N];
+    // for (int32_t k=0; k<Ns2; k++)
+        // result1->coefsC[k]=omegaxminus1[((2*k+1)*ai)%_2N];
 }
+* */
 
 /** termwise multiplication in Lagrange space */
 EXPORT void LagrangeHalfCPolynomialMul(LagrangeHalfCPolynomial * result,
