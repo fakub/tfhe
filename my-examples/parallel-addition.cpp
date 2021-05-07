@@ -17,7 +17,7 @@
 #include <parallel-addition-impl.h>
 
 #define BS_TEST
-#define PA_TEST
+//~ #define PA_TEST
 
 using namespace std;
 
@@ -64,7 +64,7 @@ int32_t main(int32_t argc, char **argv)
     //
     //    A
     //   A A
-    //  A   A
+    //  A   A           54 ms
     //  AAAAA
     //  A   A
     //
@@ -82,7 +82,7 @@ int32_t main(int32_t argc, char **argv)
     //
     //  BBB
     //  B  B
-    //  BBBB
+    //  BBBB            57 ms
     //  B   B
     //  BBBB
     //
@@ -101,9 +101,28 @@ int32_t main(int32_t argc, char **argv)
     //
     //   CCC
     //  C
-    //  C
+    //  C               92 ms
     //  C
     //   CCC
+    //
+    //~ static const int32_t N = 1024;
+    //~ static const int32_t k = 1;
+    //~ static const int32_t n = 480;
+    //~ static const int32_t bk_l = 2;
+    //~ static const int32_t bk_Bgbit = 9;
+    //~ static const int32_t ks_basebit = 1;
+    //~ static const int32_t ks_length = 13;
+    //~ static const double ks_stdev = pow(2.,-15.73); // standard deviation
+    //~ static const double bk_stdev = pow(2.,-28.12); // standard deviation
+    //~ static const double max_stdev = 0.01042;    // max standard deviation for a 1/4 msg space
+
+    // -------------------------------------------------------------------------
+    //
+    //  DDDD
+    //  D   D
+    //  D   D           106 ms
+    //  D   D
+    //  DDDD
     //
     static const int32_t N = 1024;
     static const int32_t k = 1;
@@ -118,11 +137,11 @@ int32_t main(int32_t argc, char **argv)
 
     // -------------------------------------------------------------------------
     //
-    //  DDDD
-    //  D   D
-    //  D   D
-    //  D   D
-    //  DDDD
+    //  EEEEE
+    //  E
+    //  EEE             113 ms
+    //  E
+    //  EEEEE
     //
     //~ static const int32_t N = 1024;
     //~ static const int32_t k = 1;
@@ -139,9 +158,9 @@ int32_t main(int32_t argc, char **argv)
     //
     //  EEEEE
     //  E
-    //  EEE
+    //  EEE             512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
+    //  E                       probably 2^-49 is just too close to precision of double)
     //  E
-    //  EEEEE
     //
     //~ static const int32_t N = 4096;
     //~ static const int32_t k = 1;
@@ -204,11 +223,11 @@ int32_t main(int32_t argc, char **argv)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
+        //~ bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        bs_eq(eq, a, 2, &(tfhe_keys->cloud));
+        //~ bs_eq(eq, a, 2, &(tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
@@ -217,7 +236,7 @@ int32_t main(int32_t argc, char **argv)
         int32_t gl_plain    = paral_sym_decr(gl, tfhe_keys);
         int32_t eq_plain    = paral_sym_decr(eq, tfhe_keys);
 
-        printf(" D[E(%+d)] = %+d |  %+d |   %+d  |  %+d  | %lu ms\n", i-8, a_plain,
+        printf(" D[E(%+d)] = %+d |  %+d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,
                                                             (end_id - begin_id) / 1000);
     }
