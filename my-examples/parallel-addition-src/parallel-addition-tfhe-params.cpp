@@ -1,0 +1,96 @@
+#include <parallel-addition-impl.h>
+
+
+// =============================================================================
+//
+//  Extern variables
+//
+
+const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
+{
+    {   // TFHE_LIB
+        .N = 1024,
+        .k = 1,
+        .n = 630,
+        .bk_l = 3,
+        .bk_Bgbit = 7,
+        .ks_basebit = 2,
+        .ks_length = 8,
+        .ks_stdev = pow(2.,-15),
+        .bk_stdev = pow(2.,-25),
+        .max_stdev = 0.012467,
+    },
+    {   // A_CARRY_2_GATE_TFHE              54 ms
+        .N = 1024,
+        .k = 1,
+        .n = 400,
+        .bk_l = 1,
+        .bk_Bgbit = 15,
+        .ks_basebit = 1,
+        .ks_length = 11,
+        .ks_stdev = pow(2.,-13.31),
+        .bk_stdev = pow(2.,-31.20),
+        .max_stdev = 0.04167,
+    },
+    {   // B_CARRY_3_GATE_2_BIT             57 ms
+        .N = 1024,
+        .k = 1,
+        .n = 420,
+        .bk_l = 1,
+        .bk_Bgbit = 16,
+        .ks_basebit = 1,
+        .ks_length = 11,
+        .ks_stdev = pow(2.,-13.61),
+        .bk_stdev = pow(2.,-32.53),
+        .max_stdev = 0.04167,
+    },
+    {   // C_CARRY_4_BIT                    92 ms
+        .N = 1024,
+        .k = 1,
+        .n = 480,
+        .bk_l = 2,
+        .bk_Bgbit = 9,
+        .ks_basebit = 1,
+        .ks_length = 13,
+        .ks_stdev = pow(2.,-15.73),
+        .bk_stdev = pow(2.,-28.12),
+        .max_stdev = 0.01042,
+    },
+    {   // D_PARALLEL_SC_1                  106 ms
+        .N = 1024,
+        .k = 1,
+        .n = 540,
+        .bk_l = 2,
+        .bk_Bgbit = 10,
+        .ks_basebit = 1,
+        .ks_length = 15,
+        .ks_stdev = pow(2.,-17.62),
+        .bk_stdev = pow(2.,-31.00),
+        .max_stdev = 0.01042,
+    },
+    {   // E_PARALLEL_SC_2                  113 ms
+        .N = 1024,
+        .k = 1,
+        .n = 570,
+        .bk_l = 2,
+        .bk_Bgbit = 11,
+        .ks_basebit = 1,
+        .ks_length = 16,
+        .ks_stdev = pow(2.,-18.67),
+        .bk_stdev = pow(2.,-33.04),
+        .max_stdev = 0.005208,
+    },
+    {   // F_PARALLEL_SC_3                  512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
+        //                                          probably 2^-49 is just too close to the precision of double)
+        .N = 4096,
+        .k = 1,
+        .n = 680,
+        .bk_l = 1,
+        .bk_Bgbit = 24,
+        .ks_basebit = 1,
+        .ks_length = 20,
+        .ks_stdev = pow(2.,-22.35),
+        .bk_stdev = pow(2.,-49.19),
+        .max_stdev = 0.001302,
+    },
+};

@@ -16,8 +16,17 @@
 
 #include <parallel-addition-impl.h>
 
-#define BS_TEST
-//~ #define PA_TEST
+//~ #define BS_TEST
+#define PA_TEST
+#define PA_SCENARIO D_PARALLEL_SC_1
+    // TFHE_LIB
+    // A_CARRY_2_GATE_TFHE
+    // B_CARRY_3_GATE_2_BIT
+    // C_CARRY_4_BIT
+    // D_PARALLEL_SC_1
+    // E_PARALLEL_SC_2
+    // F_PARALLEL_SC_3
+#define TFHE_PARAMS_INDEX PA_SCENARIO   // by default, use TFHE params derived for particular scenario
 
 using namespace std;
 
@@ -32,158 +41,27 @@ int32_t main(int32_t argc, char **argv)
     uint64_t seed = time(NULL);
     srand(seed);
 
-    // orig. params
-    // -------------------------------------------------------------------------
-    //
-    //  TTTTT  FFFFF  H   H  EEEEE
-    //    T    F      H   H  E
-    //    T    FFF    HHHHH  EEE
-    //    T    F      H   H  E
-    //    T    F      H   H  EEEEE
-    //
-    //~ static const int32_t N = 1024;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 630;
-    //~ static const int32_t bk_l = 3;
-    //~ static const int32_t bk_Bgbit = 7;
-    //~ static const int32_t ks_basebit = 2;
-    //~ static const int32_t ks_length = 8;
-    //~ static const double ks_stdev = pow(2.,-15); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-25); // standard deviation
-    //~ static const double max_stdev = 0.012467;   // max standard deviation for a 1/4 msg space
+    // choose TFHE params
+    const tfhe_params_t *const tfhe_params_set = &tfhe_params_store[TFHE_PARAMS_INDEX];
 
-    // w/o KS: DEPRECATED
-    // -------------------------------------------------------------------------
-    // for  80-bit security @ pi = 4
-    //      N =  512, n = 682, l = 20, mlogal = 23.745
-    // for 128-bit security @ pi = 4
-    //      N = 1024, n = 768, l = 20, mlogal = 24.331
-
-    // with KS:
-    // -------------------------------------------------------------------------
-    //
-    //    A
-    //   A A
-    //  A   A           54 ms
-    //  AAAAA
-    //  A   A
-    //
-    //~ static const int32_t N = 1024;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 400;
-    //~ static const int32_t bk_l = 1;
-    //~ static const int32_t bk_Bgbit = 15;
-    //~ static const int32_t ks_basebit = 1;
-    //~ static const int32_t ks_length = 11;
-    //~ static const double ks_stdev = pow(2.,-13.31); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-31.20); // standard deviation
-    //~ static const double max_stdev = 0.04167;    // max standard deviation for a 1/4 msg space
-
-    //
-    //  BBB
-    //  B  B
-    //  BBBB            57 ms
-    //  B   B
-    //  BBBB
-    //
-    //~ static const int32_t N = 1024;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 420;
-    //~ static const int32_t bk_l = 1;
-    //~ static const int32_t bk_Bgbit = 16;
-    //~ static const int32_t ks_basebit = 1;
-    //~ static const int32_t ks_length = 11;
-    //~ static const double ks_stdev = pow(2.,-13.61); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-32.53); // standard deviation
-    //~ static const double max_stdev = 0.04167;    // max standard deviation for a 1/4 msg space
-
-    // -------------------------------------------------------------------------
-    //
-    //   CCC
-    //  C
-    //  C               92 ms
-    //  C
-    //   CCC
-    //
-    //~ static const int32_t N = 1024;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 480;
-    //~ static const int32_t bk_l = 2;
-    //~ static const int32_t bk_Bgbit = 9;
-    //~ static const int32_t ks_basebit = 1;
-    //~ static const int32_t ks_length = 13;
-    //~ static const double ks_stdev = pow(2.,-15.73); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-28.12); // standard deviation
-    //~ static const double max_stdev = 0.01042;    // max standard deviation for a 1/4 msg space
-
-    // -------------------------------------------------------------------------
-    //
-    //  DDDD
-    //  D   D
-    //  D   D           106 ms
-    //  D   D
-    //  DDDD
-    //
-    static const int32_t N = 1024;
-    static const int32_t k = 1;
-    static const int32_t n = 540;
-    static const int32_t bk_l = 2;
-    static const int32_t bk_Bgbit = 10;
-    static const int32_t ks_basebit = 1;
-    static const int32_t ks_length = 15;
-    static const double ks_stdev = pow(2.,-17.62); // standard deviation
-    static const double bk_stdev = pow(2.,-31.00); // standard deviation
-    static const double max_stdev = 0.01042;    // max standard deviation for a 1/4 msg space
-
-    // -------------------------------------------------------------------------
-    //
-    //  EEEEE
-    //  E
-    //  EEE             113 ms
-    //  E
-    //  EEEEE
-    //
-    //~ static const int32_t N = 1024;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 570;
-    //~ static const int32_t bk_l = 2;
-    //~ static const int32_t bk_Bgbit = 11;
-    //~ static const int32_t ks_basebit = 1;
-    //~ static const int32_t ks_length = 16;
-    //~ static const double ks_stdev = pow(2.,-18.67); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-33.04); // standard deviation
-    //~ static const double max_stdev = 0.005208;   // max standard deviation for a 1/4 msg space
-
-    // -------------------------------------------------------------------------
-    //
-    //  EEEEE
-    //  E
-    //  EEE             512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
-    //  E                       probably 2^-49 is just too close to precision of double)
-    //  E
-    //
-    //~ static const int32_t N = 4096;
-    //~ static const int32_t k = 1;
-    //~ static const int32_t n = 680;
-    //~ static const int32_t bk_l = 1;
-    //~ static const int32_t bk_Bgbit = 24;
-    //~ static const int32_t ks_basebit = 1;
-    //~ static const int32_t ks_length = 20;
-    //~ static const double ks_stdev = pow(2.,-22.35); // standard deviation
-    //~ static const double bk_stdev = pow(2.,-49.19); // standard deviation
-    //~ static const double max_stdev = 0.001302;   // max standard deviation for a 1/4 msg space
-
-    // -------------------------------------------------------------------------
-
-        LweParams *params_in = new_LweParams(n, ks_stdev, max_stdev);
-        TLweParams *params_accum = new_TLweParams(N, k, bk_stdev, max_stdev);
-        TGswParams *params_bk = new_TGswParams(bk_l, bk_Bgbit, params_accum);
+        LweParams *params_in = new_LweParams(tfhe_params_set->n,
+                                             tfhe_params_set->ks_stdev,
+                                             tfhe_params_set->max_stdev);
+        TLweParams *params_accum = new_TLweParams(tfhe_params_set->N,
+                                                  tfhe_params_set->k,
+                                                  tfhe_params_set->bk_stdev,
+                                                  tfhe_params_set->max_stdev);
+        TGswParams *params_bk = new_TGswParams(tfhe_params_set->bk_l,
+                                               tfhe_params_set->bk_Bgbit,
+                                               params_accum);
 
         TfheGarbageCollector::register_param(params_in);
         TfheGarbageCollector::register_param(params_accum);
         TfheGarbageCollector::register_param(params_bk);
 
-        TFheGateBootstrappingParameterSet *tfhe_params = new TFheGateBootstrappingParameterSet(ks_length, ks_basebit, params_in, params_bk);
+        TFheGateBootstrappingParameterSet *tfhe_params = new TFheGateBootstrappingParameterSet(tfhe_params_set->ks_length,
+                                                                                               tfhe_params_set->ks_basebit,
+                                                                                               params_in, params_bk);
 
 
     const LweParams *io_lwe_params = tfhe_params->in_out_params;
@@ -223,11 +101,11 @@ int32_t main(int32_t argc, char **argv)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        //~ bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
+        bs_gleq(gl, a, 3, &(tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        //~ bs_eq(eq, a, 2, &(tfhe_keys->cloud));
+        bs_eq(eq, a, 2, &(tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt

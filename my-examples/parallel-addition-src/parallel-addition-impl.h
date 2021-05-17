@@ -12,14 +12,59 @@
 #include "tgsw.h"
 
 #define PI 4
+#define N_PARAM_SETS 7
 
+
+// =============================================================================
+//
+//  Types
+//
+
+typedef enum addition_params_index_t
+{
+    TFHE_LIB                =  0,
+    A_CARRY_2_GATE_TFHE     =  1,
+    B_CARRY_3_GATE_2_BIT    =  2,
+    C_CARRY_4_BIT           =  3,
+    D_PARALLEL_SC_1         =  4,
+    E_PARALLEL_SC_2         =  5,
+    F_PARALLEL_SC_3         =  6,
+} addition_params_index_t;
+
+/*******************************************************************************
+ * structure to hold TFHE params
+ * */
+typedef struct tfhe_params_t
+{
+    int32_t N;
+    int32_t k;
+    int32_t n;
+    int32_t bk_l;
+    int32_t bk_Bgbit;
+    int32_t ks_basebit;
+    int32_t ks_length;
+    double ks_stdev;    // standard deviation of KSK
+    double bk_stdev;    // standard deviation of BK
+    double max_stdev;   // max standard deviation for a 1/4 msg space
+} tfhe_params_t;
+
+
+// =============================================================================
+//
+//  Extern Variables
+//
+
+/*******************************************************************************
+ * store to hold TFHE params' structures
+ * n.b., currently only for 'with KS' scenario !!
+ * */
+extern const tfhe_params_t tfhe_params_store[N_PARAM_SETS];
 
 
 // =============================================================================
 //
 //  Function Prototypes
 //
-
 
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Identity, Threshold, Equality
@@ -51,7 +96,6 @@ void bs_eq(LweSample *result,
            const uint32_t thr,
            const TFheGateBootstrappingCloudKeySet *bk);
 
-
 // -----------------------------------------------------------------------------
 //  En/Decryption
 //
@@ -78,7 +122,6 @@ void paral_sym_encr(LweSample *ct,
 int32_t paral_sym_decr(const LweSample *sample,
                        const TFheGateBootstrappingSecretKeySet *sk);
 
-
 // -----------------------------------------------------------------------------
 //  Parallel Addition
 //
@@ -97,7 +140,6 @@ void parallel_add(LweSample *z,
                   const LweSample *y,
                   const uint32_t wlen,
                   const TFheGateBootstrappingCloudKeySet *bk);
-
 
 // -----------------------------------------------------------------------------
 //  Misc

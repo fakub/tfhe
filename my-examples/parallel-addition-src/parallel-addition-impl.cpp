@@ -11,7 +11,6 @@
 #include <parallel-addition-impl.h>
 
 
-
 // =============================================================================
 //
 //  Static Function Prototypes
@@ -72,12 +71,18 @@ static void paral_calc_zi(LweSample *zi,
                           const TFheGateBootstrappingCloudKeySet *bk);
 
 
+// =============================================================================
+//
+//  Extern variables
+//
+
+//  ----    TFHE params moved to separate file    ----
+
 
 // =============================================================================
 //
 //  Function Implementations
 //
-
 
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Identity, Threshold, Equality
@@ -141,7 +146,6 @@ void bs_eq(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
-
 // -----------------------------------------------------------------------------
 //  En/Decryption
 //
@@ -175,7 +179,6 @@ int32_t paral_sym_decr(const LweSample *sample,
     Torus32 mu = lwePhase(sample, sk->lwe_key);
     return (mu + (_1s16 >> 1)) >> (32 - PI);
 }
-
 
 // -----------------------------------------------------------------------------
 //  Parallel Addition
@@ -235,7 +238,6 @@ void parallel_add(LweSample *z,
     delete_LweSample_array(wlen, w);
 }
 
-
 // -----------------------------------------------------------------------------
 //  Misc
 //
@@ -244,7 +246,6 @@ void die_soon(const char* message)
     fprintf(stderr, "(!) %s\n    Aborting ...\n", message);
     abort();
 }
-
 
 
 // =============================================================================
