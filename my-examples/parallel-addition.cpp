@@ -18,15 +18,6 @@
 
 //~ #define BS_TEST
 #define PA_TEST
-#define PA_SCENARIO E_PARALLEL_SC_2
-    // TFHE_LIB
-    // A_CARRY_2_GATE_TFHE
-    // B_CARRY_3_GATE_2_BIT
-    // C_CARRY_4_BIT
-    // D_PARALLEL_SC_1
-    // E_PARALLEL_SC_2
-    // F_PARALLEL_SC_3
-#define TFHE_PARAMS_INDEX PA_SCENARIO   // by default, use TFHE params derived for particular scenario
 
 using namespace std;
 
@@ -174,7 +165,7 @@ int32_t main(int32_t argc, char **argv)
     printf("| %+9ld\n------------------------------------------------------------   ", paral_eval(&y_plain[0], PA_WLEN));
 
     // parallel addition
-    parallel_add(PA_SCENARIO, z, x, y, PA_WLEN, &(tfhe_keys->cloud));
+    parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= PA_WLEN; i++)

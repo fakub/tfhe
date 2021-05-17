@@ -9,6 +9,7 @@
 const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
 {
     {   // TFHE_LIB
+        .pi = 2,
         .N = 1024,
         .k = 1,
         .n = 630,
@@ -21,6 +22,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.012467,
     },
     {   // A_CARRY_2_GATE_TFHE              54 ms
+        .pi = 2,
         .N = 1024,
         .k = 1,
         .n = 400,
@@ -33,6 +35,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.04167,
     },
     {   // B_CARRY_3_GATE_2_BIT             57 ms
+        .pi = 2,
         .N = 1024,
         .k = 1,
         .n = 420,
@@ -45,6 +48,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.04167,
     },
     {   // C_CARRY_4_BIT                    92 ms
+        .pi = 4,
         .N = 1024,
         .k = 1,
         .n = 480,
@@ -57,6 +61,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.01042,
     },
     {   // D_PARALLEL_SC_1                  106 ms
+        .pi = 4,
         .N = 1024,
         .k = 1,
         .n = 540,
@@ -69,6 +74,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.01042,
     },
     {   // E_PARALLEL_SC_2                  113 ms
+        .pi = 5,
         .N = 1024,
         .k = 1,
         .n = 570,
@@ -82,6 +88,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
     },
     {   // F_PARALLEL_SC_3                  512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
         //                                          probably 2^-49 is just too close to the precision of double)
+        .pi = 7,
         .N = 4096,
         .k = 1,
         .n = 680,

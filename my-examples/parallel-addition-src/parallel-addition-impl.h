@@ -11,10 +11,25 @@
 #include "tlwe.h"
 #include "tgsw.h"
 
-#define PI 4
+#define TFHE_LIB              0
+#define A_CARRY_2_GATE_TFHE   1
+#define B_CARRY_3_GATE_2_BIT  2
+#define C_CARRY_4_BIT         3
+#define D_PARALLEL_SC_1       4
+#define E_PARALLEL_SC_2       5
+#define F_PARALLEL_SC_3       6
+
+// choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
+#define PA_SCENARIO     D_PARALLEL_SC_1
+
+//  ----    do not edit    ----
+#define TFHE_PARAMS_INDEX PA_SCENARIO   // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 3
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
+
+#define XSTR(x) STR(x)
+#define STR(x) #x
 
 
 // =============================================================================
@@ -22,22 +37,12 @@
 //  Types
 //
 
-typedef enum addition_scenario_t
-{
-    TFHE_LIB                =  0,
-    A_CARRY_2_GATE_TFHE     =  1,
-    B_CARRY_3_GATE_2_BIT    =  2,
-    C_CARRY_4_BIT           =  3,
-    D_PARALLEL_SC_1         =  4,
-    E_PARALLEL_SC_2         =  5,
-    F_PARALLEL_SC_3         =  6,
-} addition_scenario_t;
-
 /*******************************************************************************
  *  structure to hold TFHE params
  * */
 typedef struct tfhe_params_t
 {
+    uint32_t pi;
     int32_t N;
     int32_t k;
     int32_t n;
@@ -61,6 +66,8 @@ typedef struct tfhe_params_t
  *  n.b., currently only for 'with KS' scenario !!
  * */
 extern const tfhe_params_t tfhe_params_store[N_PARAM_SETS];
+
+extern const uint32_t PI;
 
 
 // =============================================================================
@@ -137,8 +144,7 @@ int32_t paral_sym_decr(const LweSample *sample,
  *  @param[in]      Bootstrapping Keys
  *
  */
-void parallel_add(const addition_scenario_t scenario,
-                  LweSample *z,
+void parallel_add(LweSample *z,
                   const LweSample *x,
                   const LweSample *y,
                   const uint32_t wlen,
