@@ -18,7 +18,7 @@
 
 //~ #define BS_TEST
 #define PA_TEST
-#define PA_SCENARIO D_PARALLEL_SC_1
+#define PA_SCENARIO E_PARALLEL_SC_2
     // TFHE_LIB
     // A_CARRY_2_GATE_TFHE
     // B_CARRY_3_GATE_2_BIT
@@ -41,33 +41,34 @@ int32_t main(int32_t argc, char **argv)
     uint64_t seed = time(NULL);
     srand(seed);
 
-    // choose TFHE params
+    // choose TFHE param set from store
     const tfhe_params_t *const tfhe_params_set = &tfhe_params_store[TFHE_PARAMS_INDEX];
 
-        LweParams *params_in = new_LweParams(tfhe_params_set->n,
-                                             tfhe_params_set->ks_stdev,
-                                             tfhe_params_set->max_stdev);
-        TLweParams *params_accum = new_TLweParams(tfhe_params_set->N,
-                                                  tfhe_params_set->k,
-                                                  tfhe_params_set->bk_stdev,
-                                                  tfhe_params_set->max_stdev);
-        TGswParams *params_bk = new_TGswParams(tfhe_params_set->bk_l,
-                                               tfhe_params_set->bk_Bgbit,
-                                               params_accum);
+    // setup TFHE Lib params
+    LweParams *params_in = new_LweParams(tfhe_params_set->n,
+                                         tfhe_params_set->ks_stdev,
+                                         tfhe_params_set->max_stdev);
+    TLweParams *params_accum = new_TLweParams(tfhe_params_set->N,
+                                              tfhe_params_set->k,
+                                              tfhe_params_set->bk_stdev,
+                                              tfhe_params_set->max_stdev);
+    TGswParams *params_bk = new_TGswParams(tfhe_params_set->bk_l,
+                                           tfhe_params_set->bk_Bgbit,
+                                           params_accum);
 
-        TfheGarbageCollector::register_param(params_in);
-        TfheGarbageCollector::register_param(params_accum);
-        TfheGarbageCollector::register_param(params_bk);
+    TfheGarbageCollector::register_param(params_in);
+    TfheGarbageCollector::register_param(params_accum);
+    TfheGarbageCollector::register_param(params_bk);
 
-        TFheGateBootstrappingParameterSet *tfhe_params = new TFheGateBootstrappingParameterSet(tfhe_params_set->ks_length,
-                                                                                               tfhe_params_set->ks_basebit,
-                                                                                               params_in, params_bk);
-
+    TFheGateBootstrappingParameterSet *tfhe_params = new TFheGateBootstrappingParameterSet(tfhe_params_set->ks_length,
+                                                                                           tfhe_params_set->ks_basebit,
+                                                                                           params_in, params_bk);
 
     const LweParams *io_lwe_params = tfhe_params->in_out_params;
 
     // seed TFHE
     tfhe_random_generator_setSeed((uint32_t*)(&seed), 2);
+
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *tfhe_keys = new_random_gate_bootstrapping_secret_keyset(tfhe_params);
 
@@ -133,7 +134,10 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Parallel Addition Test
     //
-    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");fflush(stdout);
+    if (PA_SCENARIO != TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
+    printf("Scenario: %c\n", 'A' + PA_SCENARIO - 1);
+    printf("Params:   %c\n\n", 'A' + TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
     #define PA_WLEN 10
@@ -170,7 +174,7 @@ int32_t main(int32_t argc, char **argv)
     printf("| %+9ld\n------------------------------------------------------------   ", paral_eval(&y_plain[0], PA_WLEN));
 
     // parallel addition
-    parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));
+    parallel_add(PA_SCENARIO, z, x, y, PA_WLEN, &(tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= PA_WLEN; i++)

@@ -55,7 +55,8 @@ static void bs_with_tv(LweSample *result,
  *  @brief          Description
  *
  */
-static void paral_calc_qi(LweSample *qi,
+static void paral_calc_qi(const addition_scenario_t scenario,
+                          LweSample *qi,
                           const LweSample *w_i0,
                           const LweSample *w_i1,
                           const TFheGateBootstrappingCloudKeySet *bk);
@@ -183,7 +184,8 @@ int32_t paral_sym_decr(const LweSample *sample,
 // -----------------------------------------------------------------------------
 //  Parallel Addition
 //
-void parallel_add(LweSample *z,
+void parallel_add(const addition_scenario_t scenario,
+                  LweSample *z,
                   const LweSample *x,
                   const LweSample *y,
                   const uint32_t wlen,
@@ -212,11 +214,11 @@ void parallel_add(LweSample *z,
 
     // calc q_i's
     // i = 0
-    paral_calc_qi(q, w, NULL, bk);
+    paral_calc_qi(scenario, q, w, NULL, bk);
     // i > 0
     for (uint32_t i = 1; i < wlen; i++)
     {
-        paral_calc_qi(q + i, w + i, w + i - 1, bk);
+        paral_calc_qi(scenario, q + i, w + i, w + i - 1, bk);
     }
 
     // calc z_i's
@@ -389,7 +391,8 @@ static void bs_with_tv(LweSample *result,
     delete_LweSample(tmp);
 }
 
-static void paral_calc_qi(LweSample *qi,
+static void paral_calc_qi(const addition_scenario_t scenario,
+                          LweSample *qi,
                           const LweSample *w_i0,
                           const LweSample *w_i1,
                           const TFheGateBootstrappingCloudKeySet *bk)
@@ -402,32 +405,92 @@ static void paral_calc_qi(LweSample *qi,
     LweSample *r3 = new_LweSample(io_lwe_params);
     LweSample *r23= new_LweSample(io_lwe_params);
 
+    char buff[50];
+
     // progress bar ...
     printf("-");fflush(stdout);
 
-    //            r1:  w_i <=> +-3
-    bs_gleq(r1,  w_i0,     3,     bk);
-
-    //            r2:  w_i == +-2
-    bs_eq  (r2,  w_i0,    2,      bk);
-
-    if (w_i1 == NULL)
+    switch (scenario)
     {
-        lweNoiselessTrivial(r3, 0, io_lwe_params);
-    }
-    else
-    {
-        //            r3:  w_i-1 <=> +-2
-        bs_gleq(r3,  w_i1,       2,   bk);
-    }
+        //  SCENARIO #1
+        case D_PARALLEL_SC_1 :
+        {
+            //      r1   =   w_i <=> +-3
+            bs_gleq(r1,      w_i0,     3,   bk);
 
-    //            r23: r2+r3 == +-2
-    lweAddTo(          r2,r3,           io_lwe_params);
-    bs_eq  (r23, r2,        2,    bk);
+            //      r2   =   w_i == +-2
+            bs_eq  (r2,      w_i0,    2,    bk);
 
-    // q_i = r1 + r23
-    lweCopy (qi, r1, io_lwe_params);
-    lweAddTo(qi, r23, io_lwe_params);
+            if (w_i1 == NULL)
+            {
+                //  zero
+                lweNoiselessTrivial(r3, 0,  io_lwe_params);
+            }
+            else
+            {
+                //      r3   =   w_i-1 <=> +-2
+                bs_gleq(r3,      w_i1,       2,   bk);
+            }
+
+            //      r23: r2+r3 == +-2
+            lweAddTo(    r2,r3,         io_lwe_params);
+            bs_eq  (r23, r2,        2,  bk);
+
+            //      q_i   =   r1 + r23
+            lweCopy (qi,      r1,       io_lwe_params);
+            lweAddTo(qi,           r23, io_lwe_params);
+            break;
+        }
+
+        //  SCENARIO #2
+        case E_PARALLEL_SC_2 :
+        {
+            //      r1   =   w_i <=> +-3
+            bs_gleq(r1,      w_i0,     3,   bk);
+
+            //      r2   =   w_i == +-2
+            bs_eq  (r2,      w_i0,    2,    bk);
+
+            if (w_i1 == NULL)
+            {
+                lweNoiselessTrivial(r3, 0,  io_lwe_params);             // r3 = w_i-1
+            }
+            else
+            {
+                lweCopy(r3, w_i1, io_lwe_params);                       // r3 = w_i-1
+            }
+            //      r23   =   w_i-1 + 3 r2 <=> +-5
+            lweAddMulTo(      r3,     3,r2,         io_lwe_params);     // r3 = w_i-1 + 3 r2
+            bs_gleq(r23,      r3,                5, bk);
+
+            //      q_i   =   r1 + r23
+            lweCopy (qi,      r1,       io_lwe_params);
+            lweAddTo(qi,           r23, io_lwe_params);
+            break;
+        }
+
+        //  SCENARIO #3
+        case F_PARALLEL_SC_3 :
+        {
+            if (w_i1 == NULL)
+            {
+                lweNoiselessTrivial(r1, 0, io_lwe_params);              // r1 = w_i-1
+            }
+            else
+            {
+                lweCopy(r1, w_i1, io_lwe_params);                       // r1 = w_i-1
+            }
+
+            //      q_i   =   w_i-1 + 6 w_i <=> +-14
+            lweAddMulTo(      r1,     6,w_i0,           io_lwe_params); // r1 = w_i-1 + 6 w_i
+            bs_gleq(qi,       r1,                 14,   bk);
+            break;
+        }
+
+        default :
+            sprintf(&buff[0], "Invalid parallel addition scenario %c\n", 'A' + (char)scenario - 1);
+            die_soon(&buff[0]);
+    }
 }
 
 static void paral_calc_zi(LweSample *zi,
