@@ -107,9 +107,9 @@ int32_t main(int32_t argc, char **argv)
         printf("| %+d ", z_seq_plain[i]);
     }
     printf("| %+9ld   %s (exp. %+9ld)\n",
-              seq_eval(&z_seq_plain[0], SEQ_WLEN + 1),
-                      exp_seq_sum == paral_eval(&z_seq_plain[0], SEQ_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                               exp_seq_sum);
+                            seq_eval(&z_seq_plain[0], SEQ_WLEN + 1),
+                            exp_seq_sum == seq_eval(&z_seq_plain[0], SEQ_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_seq_sum);
     for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
     printf("\n");
 
@@ -190,9 +190,9 @@ int32_t main(int32_t argc, char **argv)
         printf("| %+d ", z_pa_plain[i]);
     }
     printf("| %+9ld   %s (exp. %+9ld)\n",
-              paral_eval(&z_pa_plain[0], PA_WLEN + 1),
-                      exp_pa_sum == paral_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                               exp_pa_sum);
+                            paral_eval(&z_pa_plain[0], PA_WLEN + 1),
+                            exp_pa_sum == paral_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_pa_sum);
     for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
     printf("\n");
 

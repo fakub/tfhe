@@ -170,8 +170,8 @@ int32_t sym_decr(const LweSample *sample,
  *  @brief          Description
  *
  */
-bool bin_sym_decr(LweSample *ct,
-                  const TFheGateBootstrappingSecretKeySet *sk);
+int32_t bin_sym_decr(const LweSample *ct,
+                     const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
  *  @brief          Description

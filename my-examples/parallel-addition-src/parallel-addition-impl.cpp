@@ -233,10 +233,10 @@ int32_t sym_decr(const LweSample *sample,
     return (mu + (_1s16 >> 1)) >> (32 - PI);
 }
 
-bool bin_sym_decr(LweSample *ct,
-                  const TFheGateBootstrappingSecretKeySet *sk)
+int32_t bin_sym_decr(const LweSample *ct,
+                     const TFheGateBootstrappingSecretKeySet *sk)
 {
-    return bootsSymDecrypt(ct, sk);
+    return bootsSymDecrypt(ct, sk) ? 1 : 0;
 }
 
 void bin_noiseless(LweSample *ct,
@@ -274,14 +274,11 @@ void sequential_add(LweSample *z,
     // init c = 0
     bin_noiseless(carry, 0, bk);
 
-    //DBG
-    printf("\n C  |");
-
     // calc z's and carry
     for (uint32_t i = 0; i < wlen; i++)
     {
         // progress bar ...
-        //~ printf("-");fflush(stdout);
+        printf("-");fflush(stdout);
 
         // z_i = x_i XOR y_i XOR c
         bootsXOR(temp, x + i, y + i, bk);   // w_i = x_i XOR y_i (temp_0)
@@ -293,8 +290,12 @@ void sequential_add(LweSample *z,
         bootsXOR(carry + 1, temp + 1, temp + 2, bk);
         bootsCOPY(carry, carry + 1, bk);
 
-        //DBG
-        printf(" %+1d |", -1);fflush(stdout);
+                    //~ printf("Position #%d\n", i);
+                    //~ int32_t x_plain = bin_sym_decr(x + i, sk);
+                    //~ int32_t y_plain = bin_sym_decr(y + i, sk);
+                    //~ int32_t c_plain = bin_sym_decr(carry, sk);
+                    //~ int32_t z_plain = bin_sym_decr(z + i, sk);
+                    //~ printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
     }
 
     // i = wlen
@@ -372,14 +373,6 @@ void parallel_add(LweSample *z,
         lweCopy (w + i, x + i, io_lwe_params);
         lweAddTo(w + i, y + i, io_lwe_params);
     }
-            //~ // print w
-            //~ printf(" W  | +0 ");
-            //~ for (int32_t i = wlen - 1; i >= 0; i--)
-            //~ {
-                //~ plain = sym_decr(w + i, sk);
-                //~ printf("| %+d ", plain);
-            //~ }
-            //~ printf("|\n");
 
     // calc q_i's
     // i = 0
