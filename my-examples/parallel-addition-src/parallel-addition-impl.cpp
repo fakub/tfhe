@@ -195,14 +195,14 @@ void sym_encr_priv(LweSample *ct,
     lweSymEncrypt(ct, mu, alpha, sk->lwe_key);
 }
 
-void seq_bin_sym_encr(LweSample *ct,
-                      const int32_t message,
-                      const TFheGateBootstrappingSecretKeySet *sk)
+void bin_sym_encr(LweSample *ct,
+                  const int32_t message,
+                  const TFheGateBootstrappingSecretKeySet *sk)
 {
     if ((message < 0) || (1 < message))
         die_soon("Out of the alphabet A = {0,1}.");
 
-    sym_encr_priv(ct, message, sk);
+    bootsSymEncrypt(ct, message, sk);
 }
 
 void seq_quad_sym_encr(LweSample *ct,
@@ -233,6 +233,26 @@ int32_t sym_decr(const LweSample *sample,
     return (mu + (_1s16 >> 1)) >> (32 - PI);
 }
 
+bool bin_sym_decr(LweSample *ct,
+                  const TFheGateBootstrappingSecretKeySet *sk)
+{
+    return bootsSymDecrypt(ct, sk);
+}
+
+void bin_noiseless(LweSample *ct,
+                   const int32_t message,
+                   const TFheGateBootstrappingCloudKeySet *bk)
+{
+    if ((message < 0) || (1 < message))
+        die_soon("Out of the alphabet A = {0,1}.");
+
+    const LweParams *io_lwe_params = bk->params->in_out_params;
+
+    Torus32 _1s8 = modSwitchToTorus32(1, 8);
+    Torus32 mu = (message == 1) ? _1s8 : -_1s8;
+    lweNoiselessTrivial(ct, mu, io_lwe_params);
+}
+
 // -----------------------------------------------------------------------------
 //  Sequential Addition
 //
@@ -242,45 +262,93 @@ void sequential_add(LweSample *z,
                     const uint32_t wlen,
                     const TFheGateBootstrappingCloudKeySet *bk)
 {
-    //~ const LweParams *io_lwe_params = bk->params->in_out_params;
+    const LweParams *io_lwe_params = bk->params->in_out_params;
 
-    //~ // alloc aux arrays
-    //~ LweSample *w = new_LweSample_array(wlen, io_lwe_params);
-    //~ LweSample *q = new_LweSample_array(wlen, io_lwe_params);
+    //  SCENARIO binary with 5 bootstraps (ala TFHE Library)
+#if SEQ_SCENARIO == A_CARRY_2_GATE_TFHE
+{
+    // alloc aux arrays
+    LweSample *carry    = new_LweSample_array(2, io_lwe_params);
+    LweSample *temp     = new_LweSample_array(3, io_lwe_params);
 
-    //~ // calc w_i = x_i + y_i
-    //~ for (uint32_t i = 0; i < wlen; i++)
-    //~ {
-        //~ lweCopy (w + i, x + i, io_lwe_params);
-        //~ lweAddTo(w + i, y + i, io_lwe_params);
-    //~ }
+    // init c = 0
+    bin_noiseless(carry, 0, bk);
 
-    //~ // calc q_i's
-    //~ // i = 0
-    //~ paral_calc_qi(q, w, NULL, bk);
-    //~ // i > 0
-    //~ for (uint32_t i = 1; i < wlen; i++)
-    //~ {
-        //~ paral_calc_qi(q + i, w + i, w + i - 1, bk);
-    //~ }
+    //DBG
+    printf("\n C  |");
 
-    //~ // calc z_i's
-    //~ // i = 0
-    //~ paral_calc_zi(z, w, q, NULL, bk);
-    //~ // i > 0
-    //~ for (uint32_t i = 1; i < wlen; i++)
-    //~ {
-        //~ paral_calc_zi(z + i, w + i, q + i, q + i - 1, bk);
-    //~ }
-    //~ // i = wlen
-    //~ paral_calc_zi(z + wlen, NULL, NULL, q + wlen - 1, bk);
+    // calc z's and carry
+    for (uint32_t i = 0; i < wlen; i++)
+    {
+        // progress bar ...
+        //~ printf("-");fflush(stdout);
+
+        // z_i = x_i XOR y_i XOR c
+        bootsXOR(temp, x + i, y + i, bk);   // w_i = x_i XOR y_i (temp_0)
+        bootsXOR(z + i, temp, carry, bk);
+
+        // c = (x_i AND y_i) XOR (c AND (x_i XOR y_i))
+        bootsAND(temp + 1, x + i, y + i, bk);   // temp_1 = x_i AND y_i
+        bootsAND(temp + 2, carry, temp,  bk);   // temp_2 = c AND w_i
+        bootsXOR(carry + 1, temp + 1, temp + 2, bk);
+        bootsCOPY(carry, carry + 1, bk);
+
+        //DBG
+        printf(" %+1d |", -1);fflush(stdout);
+    }
+
+    // i = wlen
+    bootsCOPY(z + wlen, carry, bk);
+
+    // cleanup
+    delete_LweSample_array(3, temp);
+    delete_LweSample_array(2, carry);
+}
+
+    //  SCENARIO binary with 2 bootstraps
+#elif SEQ_SCENARIO == B_CARRY_3_GATE_2_BIT
+{
+    // alloc carry
+    LweSample *c = new_LweSample(io_lwe_params);
+
+    // init c = 0
+    bin_noiseless(c, 0, bk);
+
+    // calc z's and carry
+    for (uint32_t i = 0; i < wlen; i++)
+    {
+        // progress bar ...
+        printf("-");fflush(stdout);
+
+        // z_i = XOR3(x_i, y_i, c)
+        bootsXOR3(z + i, x + i, y + i, c, bk);
+        // c = 2OF3(x_i, y_i, c)
+        boots2OF3(c,     x + i, y + i, c, bk);
+    }
+
+    // i = wlen
+    bootsCOPY(z + wlen, c, bk);
+
+    // cleanup
+    delete_LweSample(c);
+}
+
+    //  SCENARIO quad with 5 bootstraps
+#elif SEQ_SCENARIO == C_CARRY_4_BIT
+{
+    printf("C");
+}
+
+#else
+    #pragma message "Invalid sequential addition scenario " XSTR(SEQ_SCENARIO)
+    #error "As stated above."
+#endif
+
+    //~ lweCopy (w + i, x + i, io_lwe_params);
+    //~ lweAddTo(w + i, y + i, io_lwe_params);
 
     // progress bar end
     printf("\n");
-
-    //~ // cleanup
-    //~ delete_LweSample_array(wlen, q);
-    //~ delete_LweSample_array(wlen, w);
 }
 
 // -----------------------------------------------------------------------------

@@ -70,8 +70,8 @@ int32_t main(int32_t argc, char **argv)
     for (int32_t i = 0; i < SEQ_WLEN; i++)
     {
         //TODO switch to seq_quad_sym_encr by some macro
-        seq_bin_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
-        seq_bin_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
+        bin_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
+        bin_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
     }
 
     // print inputs
@@ -97,7 +97,7 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= SEQ_WLEN; i++)
-        z_seq_plain[i] = sym_decr(z_seq + i, seq_tfhe_keys);
+        z_seq_plain[i] = bin_sym_decr(z_seq + i, seq_tfhe_keys);
 
     // print results
     // z

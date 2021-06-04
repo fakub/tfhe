@@ -139,9 +139,9 @@ void sym_encr_priv(LweSample *ct,
  *  @brief          Description
  *
  */
-void seq_bin_sym_encr(LweSample *ct,
-                      const int32_t message,
-                      const TFheGateBootstrappingSecretKeySet *sk);
+void bin_sym_encr(LweSample *ct,
+                  const int32_t message,
+                  const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
  *  @brief          Description
@@ -165,6 +165,21 @@ void paral_sym_encr(LweSample *ct,
  */
 int32_t sym_decr(const LweSample *sample,
                  const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+bool bin_sym_decr(LweSample *ct,
+                  const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void bin_noiseless(LweSample *ct,
+                   const int32_t message,
+                   const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
 //  Sequential Addition
