@@ -15,9 +15,9 @@
 
 #include <parallel-addition-impl.h>
 
-//~ #define SEQ_TEST
+#define SEQ_TEST
 #define  PA_TEST
-//~ #define  BS_TEST
+#define  BS_TEST
 
 using namespace std;
 
@@ -40,7 +40,8 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Sequential Addition with Carry Test
     //
-    if (SEQ_SCENARIO != SEQ_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    if (SEQ_SCENARIO != SEQ_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with sequential addition scenario!\n");
+    printf("\n\n================================================================================\n");
     printf("\n    <<<<    Sequential Addition Test    >>>>\n\n");
     printf("Scenario: %c\n", 'A' + SEQ_SCENARIO - 1);
     printf("Params:   %c\n\n", 'A' + SEQ_TFHE_PARAMS_INDEX - 1);fflush(stdout);
@@ -53,63 +54,69 @@ int32_t main(int32_t argc, char **argv)
     TFheGateBootstrappingSecretKeySet *seq_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(seq_tfhe_params);
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
-    //~ #define PA_WLEN 10
-    //~ int32_t x_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
-    //~ int32_t y_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
-    //~ int32_t z_plain[PA_WLEN + 1];
+    //TODO add scenario for beta = 4 by some macro
+    #define SEQ_WLEN 20
+    int32_t x_seq_plain[SEQ_WLEN] = {0,1,0,0,0,1,0,1,1,0,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
+    int32_t y_seq_plain[SEQ_WLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,0,1,1,0,1,0,0,1,};
+    int32_t z_seq_plain[SEQ_WLEN + 1];
 
-    //~ int64_t exp_sum = paral_eval(&x_plain[0], PA_WLEN) + paral_eval(&y_plain[0], PA_WLEN);
+    int64_t exp_seq_sum = seq_eval(&x_seq_plain[0], SEQ_WLEN) + seq_eval(&y_seq_plain[0], SEQ_WLEN);
 
-    //~ LweSample *x = new_LweSample_array(PA_WLEN,     seq_io_lwe_params);   // for parallel addition
-    //~ LweSample *y = new_LweSample_array(PA_WLEN,     seq_io_lwe_params);
-    //~ LweSample *z = new_LweSample_array(PA_WLEN + 1, seq_io_lwe_params);
+    LweSample *x_seq = new_LweSample_array(SEQ_WLEN,     seq_io_lwe_params);   // for parallel addition
+    LweSample *y_seq = new_LweSample_array(SEQ_WLEN,     seq_io_lwe_params);
+    LweSample *z_seq = new_LweSample_array(SEQ_WLEN + 1, seq_io_lwe_params);
 
-    //~ // encrypt
-    //~ for (int32_t i = 0; i < PA_WLEN; i++)
-    //~ {
-        //~ paral_sym_encr(x + i, x_plain[i], seq_tfhe_keys);
-        //~ paral_sym_encr(y + i, y_plain[i], seq_tfhe_keys);
-    //~ }
+    // encrypt
+    for (int32_t i = 0; i < SEQ_WLEN; i++)
+    {
+        //TODO switch to seq_quad_sym_encr by some macro
+        seq_bin_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
+        seq_bin_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
+    }
 
-    //~ // print inputs
-    //~ printf("------------------------------------------------------------\n");
+    // print inputs
+    for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
+    printf("\n");
 
-    //~ // x
-    //~ printf(" X  | +0 ");
-    //~ for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        //~ printf("| %+d ", x_plain[i]);
-    //~ printf("| %+9ld\n", paral_eval(&x_plain[0], PA_WLEN));
+    // x
+    printf(" X  | +0 ");
+    for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_seq_plain[i]);
+    printf("| %+9ld\n", seq_eval(&x_seq_plain[0], SEQ_WLEN));
 
-    //~ // y
-    //~ printf(" Y  | +0 ");
-    //~ for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        //~ printf("| %+d ", y_plain[i]);
-    //~ printf("| %+9ld\n------------------------------------------------------------   ", paral_eval(&y_plain[0], PA_WLEN));
+    // y
+    printf(" Y  | +0 ");
+    for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", y_seq_plain[i]);
+    printf("| %+9ld\n", seq_eval(&y_seq_plain[0], SEQ_WLEN));
+    for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
+    printf("   ");
 
-    //~ // parallel addition
-    //~ parallel_add(z, x, y, PA_WLEN, &(tfhe_keys->cloud));
+    // sequential addition
+    sequential_add(z_seq, x_seq, y_seq, SEQ_WLEN, &(seq_tfhe_keys->cloud));
 
-    //~ // decrypt
-    //~ for (int32_t i = 0; i <= PA_WLEN; i++)
-        //~ z_plain[i] = paral_sym_decr(z + i, tfhe_keys);
+    // decrypt
+    for (int32_t i = 0; i <= SEQ_WLEN; i++)
+        z_seq_plain[i] = sym_decr(z_seq + i, seq_tfhe_keys);
 
-    //~ // print results
-    //~ // z
-    //~ printf(" Z  ");
-    //~ for (int32_t i = PA_WLEN; i >= 0; i--)
-    //~ {
-        //~ printf("| %+d ", z_plain[i]);
-    //~ }
-    //~ printf("| %+9ld   %s (exp. %+9ld)\n",
-              //~ paral_eval(&z_plain[0], PA_WLEN + 1),
-                      //~ exp_sum == paral_eval(&z_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                               //~ exp_sum);
-    //~ printf("------------------------------------------------------------\n");
+    // print results
+    // z
+    printf(" Z  ");
+    for (int32_t i = SEQ_WLEN; i >= 0; i--)
+    {
+        printf("| %+d ", z_seq_plain[i]);
+    }
+    printf("| %+9ld   %s (exp. %+9ld)\n",
+              seq_eval(&z_seq_plain[0], SEQ_WLEN + 1),
+                      exp_seq_sum == paral_eval(&z_seq_plain[0], SEQ_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                               exp_seq_sum);
+    for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
+    printf("\n");
 
-    //~ // cleanup
-    //~ delete_LweSample_array(PA_WLEN,     x);
-    //~ delete_LweSample_array(PA_WLEN,     y);
-    //~ delete_LweSample_array(PA_WLEN + 1, z);
+    // cleanup
+    delete_LweSample_array(SEQ_WLEN,     x_seq);
+    delete_LweSample_array(SEQ_WLEN,     y_seq);
+    delete_LweSample_array(SEQ_WLEN + 1, z_seq);
 #endif
 
 
@@ -119,6 +126,7 @@ int32_t main(int32_t argc, char **argv)
     //  Parallel Addition Test
     //
     if (PA_SCENARIO != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    printf("\n\n================================================================================\n");
     printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
     printf("Scenario: %c\n", 'A' + PA_SCENARIO - 1);
     printf("Params:   %c\n\n", 'A' + PA_TFHE_PARAMS_INDEX - 1);fflush(stdout);
@@ -132,62 +140,66 @@ int32_t main(int32_t argc, char **argv)
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
     #define PA_WLEN 10
-    int32_t x_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
-    int32_t y_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
-    int32_t z_plain[PA_WLEN + 1];
+    int32_t x_pa_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
+    int32_t y_pa_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
+    int32_t z_pa_plain[PA_WLEN + 1];
 
-    int64_t exp_sum = paral_eval(&x_plain[0], PA_WLEN) + paral_eval(&y_plain[0], PA_WLEN);
+    int64_t exp_pa_sum = paral_eval(&x_pa_plain[0], PA_WLEN) + paral_eval(&y_pa_plain[0], PA_WLEN);
 
-    LweSample *x = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);   // for parallel addition
-    LweSample *y = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);
-    LweSample *z = new_LweSample_array(PA_WLEN + 1, pa_io_lwe_params);
+    LweSample *x_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);   // for parallel addition
+    LweSample *y_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);
+    LweSample *z_pa = new_LweSample_array(PA_WLEN + 1, pa_io_lwe_params);
 
     // encrypt
     for (int32_t i = 0; i < PA_WLEN; i++)
     {
-        paral_sym_encr(x + i, x_plain[i], pa_tfhe_keys);
-        paral_sym_encr(y + i, y_plain[i], pa_tfhe_keys);
+        paral_sym_encr(x_pa + i, x_pa_plain[i], pa_tfhe_keys);
+        paral_sym_encr(y_pa + i, y_pa_plain[i], pa_tfhe_keys);
     }
 
     // print inputs
-    printf("------------------------------------------------------------\n");
+    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+    printf("\n");
 
     // x
     printf(" X  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        printf("| %+d ", x_plain[i]);
-    printf("| %+9ld\n", paral_eval(&x_plain[0], PA_WLEN));
+        printf("| %+d ", x_pa_plain[i]);
+    printf("| %+9ld\n", paral_eval(&x_pa_plain[0], PA_WLEN));
 
     // y
     printf(" Y  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        printf("| %+d ", y_plain[i]);
-    printf("| %+9ld\n------------------------------------------------------------   ", paral_eval(&y_plain[0], PA_WLEN));
+        printf("| %+d ", y_pa_plain[i]);
+    printf("| %+9ld\n", paral_eval(&y_pa_plain[0], PA_WLEN));
+    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+    printf("   ");
 
     // parallel addition
-    parallel_add(z, x, y, PA_WLEN, &(pa_tfhe_keys->cloud));
+    parallel_add(z_pa, x_pa, y_pa, PA_WLEN, &(pa_tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= PA_WLEN; i++)
-        z_plain[i] = paral_sym_decr(z + i, pa_tfhe_keys);
+        z_pa_plain[i] = sym_decr(z_pa + i, pa_tfhe_keys);
 
     // print results
     // z
     printf(" Z  ");
     for (int32_t i = PA_WLEN; i >= 0; i--)
     {
-        printf("| %+d ", z_plain[i]);
+        printf("| %+d ", z_pa_plain[i]);
     }
     printf("| %+9ld   %s (exp. %+9ld)\n",
-              paral_eval(&z_plain[0], PA_WLEN + 1),
-                      exp_sum == paral_eval(&z_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                               exp_sum);
-    printf("------------------------------------------------------------\n");
+              paral_eval(&z_pa_plain[0], PA_WLEN + 1),
+                      exp_pa_sum == paral_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                               exp_pa_sum);
+    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+    printf("\n");
 
     // cleanup
-    delete_LweSample_array(PA_WLEN,     x);
-    delete_LweSample_array(PA_WLEN,     y);
-    delete_LweSample_array(PA_WLEN + 1, z);
+    delete_LweSample_array(PA_WLEN,     x_pa);
+    delete_LweSample_array(PA_WLEN,     y_pa);
+    delete_LweSample_array(PA_WLEN + 1, z_pa);
 #endif
 
 
@@ -196,6 +208,7 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Bootstrapping Test
     //
+    printf("\n\n================================================================================\n");
     printf("\n    <<<<    Bootstrapping Test    >>>>\n\n");fflush(stdout);
 
     // setup TFHE params
@@ -219,7 +232,7 @@ int32_t main(int32_t argc, char **argv)
     for (int32_t i = 0; i < (1 << PI); i++)
     {
         // encrypt
-        paral_sym_encr_priv(a, i - (1 << (PI-1)), bs_tfhe_keys);
+        sym_encr_priv(a, i - (1 << (PI-1)), bs_tfhe_keys);
 
         // bootstrap
         clock_t begin_id = clock();
@@ -235,10 +248,10 @@ int32_t main(int32_t argc, char **argv)
         // clock_t end_eq = clock();
 
         // decrypt
-        int32_t a_plain     = paral_sym_decr(a,  bs_tfhe_keys);
-        int32_t id_plain    = paral_sym_decr(id, bs_tfhe_keys);
-        int32_t gl_plain    = paral_sym_decr(gl, bs_tfhe_keys);
-        int32_t eq_plain    = paral_sym_decr(eq, bs_tfhe_keys);
+        int32_t a_plain     = sym_decr(a,  bs_tfhe_keys);
+        int32_t id_plain    = sym_decr(id, bs_tfhe_keys);
+        int32_t gl_plain    = sym_decr(gl, bs_tfhe_keys);
+        int32_t eq_plain    = sym_decr(eq, bs_tfhe_keys);
 
         printf(" D[E(%+d)] = %+d |  %+d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,

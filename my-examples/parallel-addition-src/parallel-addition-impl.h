@@ -126,13 +126,30 @@ void bs_eq(LweSample *result,
 // -----------------------------------------------------------------------------
 //  En/Decryption
 //
+
 /**
  *  @brief          Description
  *
  */
-void paral_sym_encr_priv(LweSample *ct,
-                         const int32_t message,
-                         const TFheGateBootstrappingSecretKeySet *sk);
+void sym_encr_priv(LweSample *ct,
+                   const int32_t message,
+                   const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void seq_bin_sym_encr(LweSample *ct,
+                      const int32_t message,
+                      const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void seq_quad_sym_encr(LweSample *ct,
+                       const int32_t message,
+                       const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
  *  @brief          Description
@@ -146,12 +163,34 @@ void paral_sym_encr(LweSample *ct,
  *  @brief          Description
  *
  */
-int32_t paral_sym_decr(const LweSample *sample,
-                       const TFheGateBootstrappingSecretKeySet *sk);
+int32_t sym_decr(const LweSample *sample,
+                 const TFheGateBootstrappingSecretKeySet *sk);
+
+// -----------------------------------------------------------------------------
+//  Sequential Addition
+//
+
+/**
+ *  @brief          Main Sequential Addition Function
+ *
+ *  @param[out]     LWE Sample (length +wlen+ + 1)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      Length of LWE samples
+ *  @param[in]      Bootstrapping Keys
+ *
+ */
+
+void sequential_add(LweSample *z,
+                    const LweSample *x,
+                    const LweSample *y,
+                    const uint32_t wlen,
+                    const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
 //  Parallel Addition
 //
+
 /**
  *  @brief          Main Parallel Addition Function
  *
@@ -171,6 +210,7 @@ void parallel_add(LweSample *z,
 // -----------------------------------------------------------------------------
 //  Misc
 //
+
 /**
  *  @brief          Lived fast -> die soon
  *
@@ -185,5 +225,12 @@ void die_soon(const char* message);
  */
 int64_t paral_eval(const int32_t *const x,
                    const uint32_t len);
+
+/**
+ *  @brief          Description
+ *
+ */
+int64_t seq_eval(const int32_t *const x,
+                 const uint32_t len);
 
 #endif // #ifndef PARALLEL_ADDITION_IMPL_H

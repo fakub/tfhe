@@ -182,9 +182,9 @@ void bs_eq(LweSample *result,
 // -----------------------------------------------------------------------------
 //  En/Decryption
 //
-void paral_sym_encr_priv(LweSample *ct,
-                         const int32_t message,
-                         const TFheGateBootstrappingSecretKeySet *sk)
+void sym_encr_priv(LweSample *ct,
+                   const int32_t message,
+                   const TFheGateBootstrappingSecretKeySet *sk)
 {
     Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
 
@@ -195,6 +195,26 @@ void paral_sym_encr_priv(LweSample *ct,
     lweSymEncrypt(ct, mu, alpha, sk->lwe_key);
 }
 
+void seq_bin_sym_encr(LweSample *ct,
+                      const int32_t message,
+                      const TFheGateBootstrappingSecretKeySet *sk)
+{
+    if ((message < 0) || (1 < message))
+        die_soon("Out of the alphabet A = {0,1}.");
+
+    sym_encr_priv(ct, message, sk);
+}
+
+void seq_quad_sym_encr(LweSample *ct,
+                       const int32_t message,
+                       const TFheGateBootstrappingSecretKeySet *sk)
+{
+    if ((message < 0) || (3 < message))
+        die_soon("Out of the alphabet A = [0 .. 3].");
+
+    sym_encr_priv(ct, message, sk);
+}
+
 void paral_sym_encr(LweSample *ct,
                     const int32_t message,
                     const TFheGateBootstrappingSecretKeySet *sk)
@@ -202,15 +222,65 @@ void paral_sym_encr(LweSample *ct,
     if ((message < -2) || (2 < message))
         die_soon("Out of the alphabet A = [-2 .. 2].");
 
-    paral_sym_encr_priv(ct, message, sk);
+    sym_encr_priv(ct, message, sk);
 }
 
-int32_t paral_sym_decr(const LweSample *sample,
-                       const TFheGateBootstrappingSecretKeySet *sk)
+int32_t sym_decr(const LweSample *sample,
+                 const TFheGateBootstrappingSecretKeySet *sk)
 {
     Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
     Torus32 mu = lwePhase(sample, sk->lwe_key);
     return (mu + (_1s16 >> 1)) >> (32 - PI);
+}
+
+// -----------------------------------------------------------------------------
+//  Sequential Addition
+//
+void sequential_add(LweSample *z,
+                    const LweSample *x,
+                    const LweSample *y,
+                    const uint32_t wlen,
+                    const TFheGateBootstrappingCloudKeySet *bk)
+{
+    //~ const LweParams *io_lwe_params = bk->params->in_out_params;
+
+    //~ // alloc aux arrays
+    //~ LweSample *w = new_LweSample_array(wlen, io_lwe_params);
+    //~ LweSample *q = new_LweSample_array(wlen, io_lwe_params);
+
+    //~ // calc w_i = x_i + y_i
+    //~ for (uint32_t i = 0; i < wlen; i++)
+    //~ {
+        //~ lweCopy (w + i, x + i, io_lwe_params);
+        //~ lweAddTo(w + i, y + i, io_lwe_params);
+    //~ }
+
+    //~ // calc q_i's
+    //~ // i = 0
+    //~ paral_calc_qi(q, w, NULL, bk);
+    //~ // i > 0
+    //~ for (uint32_t i = 1; i < wlen; i++)
+    //~ {
+        //~ paral_calc_qi(q + i, w + i, w + i - 1, bk);
+    //~ }
+
+    //~ // calc z_i's
+    //~ // i = 0
+    //~ paral_calc_zi(z, w, q, NULL, bk);
+    //~ // i > 0
+    //~ for (uint32_t i = 1; i < wlen; i++)
+    //~ {
+        //~ paral_calc_zi(z + i, w + i, q + i, q + i - 1, bk);
+    //~ }
+    //~ // i = wlen
+    //~ paral_calc_zi(z + wlen, NULL, NULL, q + wlen - 1, bk);
+
+    // progress bar end
+    printf("\n");
+
+    //~ // cleanup
+    //~ delete_LweSample_array(wlen, q);
+    //~ delete_LweSample_array(wlen, w);
 }
 
 // -----------------------------------------------------------------------------
@@ -238,7 +308,7 @@ void parallel_add(LweSample *z,
             //~ printf(" W  | +0 ");
             //~ for (int32_t i = wlen - 1; i >= 0; i--)
             //~ {
-                //~ plain = paral_sym_decr(w + i, sk);
+                //~ plain = sym_decr(w + i, sk);
                 //~ printf("| %+d ", plain);
             //~ }
             //~ printf("|\n");
@@ -584,6 +654,19 @@ int64_t paral_eval(const int32_t *const x,
     for (uint32_t i = 0; i < len; i++)
     {
         r += x[i] * (1 << (2*i));
+    }
+
+    return r;
+}
+
+int64_t seq_eval(const int32_t *const x,
+                 const uint32_t len)
+{
+    int64_t r = 0;
+
+    for (uint32_t i = 0; i < len; i++)
+    {
+        r += x[i] * (1 << i);
     }
 
     return r;
