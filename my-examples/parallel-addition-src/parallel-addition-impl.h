@@ -20,10 +20,17 @@
 #define F_PARALLEL_SC_3       6
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define PA_SCENARIO     D_PARALLEL_SC_1
+#define  PA_SCENARIO    D_PARALLEL_SC_1
+
+// choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
+#define SEQ_SCENARIO    A_CARRY_2_GATE_TFHE
+
+// choose TFHE parameters for bootstrapping tests
+#define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1
 
 //  ----    do not edit    ----
-#define TFHE_PARAMS_INDEX PA_SCENARIO   // by default, use TFHE params derived for particular scenario
+#define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO   // by default, use TFHE params derived for particular scenario
+#define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO   // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 3
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
@@ -74,6 +81,17 @@ extern const uint32_t PI;
 //
 //  Function Prototypes
 //
+
+// -----------------------------------------------------------------------------
+//  TFHE Param Setup
+//
+
+/**
+ *  @brief          Description
+ *
+ */
+void setup_TFHE_params(const int tfhe_params_index,
+                       TFheGateBootstrappingParameterSet **const tfhe_params);
 
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Identity, Threshold, Equality

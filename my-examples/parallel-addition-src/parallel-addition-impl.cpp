@@ -7,6 +7,7 @@
 #include "lweparams.h"
 #include "tlwe.h"
 #include "tgsw.h"
+#include "tfhe_garbage_collector.h"
 
 #include <parallel-addition-impl.h>
 
@@ -78,13 +79,43 @@ static void paral_calc_zi(LweSample *zi,
 
 //  ----    TFHE params moved to separate file    ----
 
-extern const uint32_t PI = tfhe_params_store[TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI = tfhe_params_store[PA_TFHE_PARAMS_INDEX].pi;
 
 
 // =============================================================================
 //
 //  Function Implementations
 //
+
+// -----------------------------------------------------------------------------
+//  TFHE Param Setup
+//
+void setup_TFHE_params(const int tfhe_params_index,
+                       TFheGateBootstrappingParameterSet **const tfhe_params)
+{
+    // choose TFHE param set from store
+    const tfhe_params_t *const tfhe_params_set = &tfhe_params_store[tfhe_params_index];
+
+    // setup TFHE Lib params
+    LweParams *params_in = new_LweParams(tfhe_params_set->n,
+                                         tfhe_params_set->ks_stdev,
+                                         tfhe_params_set->max_stdev);
+    TLweParams *params_accum = new_TLweParams(tfhe_params_set->N,
+                                              tfhe_params_set->k,
+                                              tfhe_params_set->bk_stdev,
+                                              tfhe_params_set->max_stdev);
+    TGswParams *params_bk = new_TGswParams(tfhe_params_set->bk_l,
+                                           tfhe_params_set->bk_Bgbit,
+                                           params_accum);
+
+    TfheGarbageCollector::register_param(params_in);
+    TfheGarbageCollector::register_param(params_accum);
+    TfheGarbageCollector::register_param(params_bk);
+
+    *tfhe_params = new TFheGateBootstrappingParameterSet(tfhe_params_set->ks_length,
+                                                         tfhe_params_set->ks_basebit,
+                                                         params_in, params_bk);
+}
 
 // -----------------------------------------------------------------------------
 //  LUT Bootstrapping: Identity, Threshold, Equality
