@@ -56,9 +56,15 @@ bootsOR(LweSample *result, const LweSample *ca, const LweSample *cb, const TFheG
 /** bootstrapped And Gate: result = a and b */
 EXPORT void
 bootsAND(LweSample *result, const LweSample *ca, const LweSample *cb, const TFheGateBootstrappingCloudKeySet *bk);
+/** bootstrapped 3OF3 Gate: result = 2OF3(a, b, c) */
+EXPORT void
+boots2OF3(LweSample *result, const LweSample *ca, const LweSample *cb, const LweSample *cc, const TFheGateBootstrappingCloudKeySet *bk);
 /** bootstrapped Xor Gate: result = a xor b */
 EXPORT void
 bootsXOR(LweSample *result, const LweSample *ca, const LweSample *cb, const TFheGateBootstrappingCloudKeySet *bk);
+/** bootstrapped ternary Xor Gate: result = a xor b xor c */
+EXPORT void
+bootsXOR3(LweSample *result, const LweSample *ca, const LweSample *cb, const LweSample *cc, const TFheGateBootstrappingCloudKeySet *bk);
 /** bootstrapped Xnor Gate: result = (a==b) */
 EXPORT void
 bootsXNOR(LweSample *result, const LweSample *ca, const LweSample *cb, const TFheGateBootstrappingCloudKeySet *bk);

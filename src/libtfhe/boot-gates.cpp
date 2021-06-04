@@ -105,6 +105,32 @@ bootsAND(LweSample *result, const LweSample *ca, const LweSample *cb, const TFhe
 
 
 /*
+ * Homomorphic bootstrapped 2OF3 gate
+ * Takes in input 3 LWE samples (with message space [-1/8,1/8], noise<1/16)
+ * Outputs a LWE bootstrapped sample (with message space [-1/8,1/8], noise<1/16)
+*/
+EXPORT void
+boots2OF3(LweSample *result, const LweSample *ca, const LweSample *cb, const LweSample *cc, const TFheGateBootstrappingCloudKeySet *bk) {
+    static const Torus32 MU = modSwitchToTorus32(1, 8);
+    const LweParams *in_out_params = bk->params->in_out_params;
+
+    LweSample *temp_result = new_LweSample(in_out_params);
+
+    //compute: ca + cb + cc
+    lweNoiselessTrivial(temp_result, 0, in_out_params);
+    lweAddTo(temp_result, ca, in_out_params);
+    lweAddTo(temp_result, cb, in_out_params);
+    lweAddTo(temp_result, cc, in_out_params);
+
+    //if the phase is positive, the result is 1/8
+    //if the phase is positive, else the result is -1/8
+    tfhe_bootstrap_FFT(result, bk->bkFFT, MU, temp_result);
+
+    delete_LweSample(temp_result);
+}
+
+
+/*
  * Homomorphic bootstrapped XOR gate
  * Takes in input 2 LWE samples (with message space [-1/8,1/8], noise<1/16)
  * Outputs a LWE bootstrapped sample (with message space [-1/8,1/8], noise<1/16)
@@ -121,6 +147,32 @@ bootsXOR(LweSample *result, const LweSample *ca, const LweSample *cb, const TFhe
     lweNoiselessTrivial(temp_result, XorConst, in_out_params);
     lweAddMulTo(temp_result, 2, ca, in_out_params);
     lweAddMulTo(temp_result, 2, cb, in_out_params);
+
+    //if the phase is positive, the result is 1/8
+    //if the phase is positive, else the result is -1/8
+    tfhe_bootstrap_FFT(result, bk->bkFFT, MU, temp_result);
+
+    delete_LweSample(temp_result);
+}
+
+
+/*
+ * Homomorphic bootstrapped ternary XOR gate
+ * Takes in input 3 LWE samples (with message space [-1/8,1/8], noise<1/16)
+ * Outputs a LWE bootstrapped sample (with message space [-1/8,1/8], noise<1/16)
+*/
+EXPORT void
+bootsXOR3(LweSample *result, const LweSample *ca, const LweSample *cb, const LweSample *cc, const TFheGateBootstrappingCloudKeySet *bk) {
+    static const Torus32 MU = modSwitchToTorus32(1, 8);
+    const LweParams *in_out_params = bk->params->in_out_params;
+
+    LweSample *temp_result = new_LweSample(in_out_params);
+
+    //compute: -2 * (ca + cb + cc)
+    lweNoiselessTrivial(temp_result, 0, in_out_params);
+    lweSubMulTo(temp_result, 2, ca, in_out_params);
+    lweSubMulTo(temp_result, 2, cb, in_out_params);
+    lweSubMulTo(temp_result, 2, cc, in_out_params);
 
     //if the phase is positive, the result is 1/8
     //if the phase is positive, else the result is -1/8
