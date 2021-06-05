@@ -23,10 +23,12 @@
 #define  PA_SCENARIO    D_PARALLEL_SC_1
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO    A_CARRY_2_GATE_TFHE
+#define SEQ_SCENARIO    B_CARRY_3_GATE_2_BIT
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1
+
+#define DBG_OUT
 
 //  ----    do not edit    ----
 #define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO   // by default, use TFHE params derived for particular scenario
@@ -200,6 +202,9 @@ void sequential_add(LweSample *z,
                     const LweSample *x,
                     const LweSample *y,
                     const uint32_t wlen,
+#ifdef DBG_OUT
+                    const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                     const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------

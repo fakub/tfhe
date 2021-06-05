@@ -93,7 +93,11 @@ int32_t main(int32_t argc, char **argv)
     printf("   ");
 
     // sequential addition
-    sequential_add(z_seq, x_seq, y_seq, SEQ_WLEN, &(seq_tfhe_keys->cloud));
+    sequential_add(z_seq, x_seq, y_seq, SEQ_WLEN,
+#ifdef DBG_OUT
+                   seq_tfhe_keys,
+#endif
+                   &(seq_tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= SEQ_WLEN; i++)

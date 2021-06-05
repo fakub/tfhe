@@ -191,7 +191,7 @@ void sym_encr_priv(LweSample *ct,
     // scale to [-8/16, 7/16]
     //                         ___/ 8 \___     _/ mask 1111 \_     ___/ 8 \___
     Torus32 mu = (((message + (1 << (PI-1))) & ((1 << PI) - 1)) - (1 << (PI-1))) * _1s16;
-    double alpha = sk->params->in_out_params->alpha_min; //TODO orig: specify noise
+    double alpha = sk->params->in_out_params->alpha_min;
     lweSymEncrypt(ct, mu, alpha, sk->lwe_key);
 }
 
@@ -260,9 +260,16 @@ void sequential_add(LweSample *z,
                     const LweSample *x,
                     const LweSample *y,
                     const uint32_t wlen,
+#ifdef DBG_OUT
+                    const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                     const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
+
+#ifdef DBG_OUT
+    printf("\n");
+#endif
 
     //  SCENARIO binary with 5 bootstraps (ala TFHE Library)
 #if SEQ_SCENARIO == A_CARRY_2_GATE_TFHE
@@ -277,8 +284,10 @@ void sequential_add(LweSample *z,
     // calc z's and carry
     for (uint32_t i = 0; i < wlen; i++)
     {
+#ifndef DBG_OUT
         // progress bar ...
         printf("-");fflush(stdout);
+#endif
 
         // z_i = x_i XOR y_i XOR c
         bootsXOR(temp, x + i, y + i, bk);   // w_i = x_i XOR y_i (temp_0)
@@ -290,12 +299,14 @@ void sequential_add(LweSample *z,
         bootsXOR(carry + 1, temp + 1, temp + 2, bk);
         bootsCOPY(carry, carry + 1, bk);
 
-                    //~ printf("Position #%d\n", i);
-                    //~ int32_t x_plain = bin_sym_decr(x + i, sk);
-                    //~ int32_t y_plain = bin_sym_decr(y + i, sk);
-                    //~ int32_t c_plain = bin_sym_decr(carry, sk);
-                    //~ int32_t z_plain = bin_sym_decr(z + i, sk);
-                    //~ printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
+#ifdef DBG_OUT
+        printf("Position #%d\n", i);
+        int32_t x_plain = bin_sym_decr(x + i, sk);
+        int32_t y_plain = bin_sym_decr(y + i, sk);
+        int32_t c_plain = bin_sym_decr(carry, sk);
+        int32_t z_plain = bin_sym_decr(z + i, sk);
+        printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
+#endif
     }
 
     // i = wlen
@@ -318,13 +329,24 @@ void sequential_add(LweSample *z,
     // calc z's and carry
     for (uint32_t i = 0; i < wlen; i++)
     {
+#ifndef DBG_OUT
         // progress bar ...
         printf("-");fflush(stdout);
+#endif
 
         // z_i = XOR3(x_i, y_i, c)
         bootsXOR3(z + i, x + i, y + i, c, bk);
         // c = 2OF3(x_i, y_i, c)
         boots2OF3(c,     x + i, y + i, c, bk);
+
+#ifdef DBG_OUT
+        printf("Position #%d\n", i);
+        int32_t x_plain = bin_sym_decr(x + i, sk);
+        int32_t y_plain = bin_sym_decr(y + i, sk);
+        int32_t c_plain = bin_sym_decr(c,     sk);
+        int32_t z_plain = bin_sym_decr(z + i, sk);
+        printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
+#endif
     }
 
     // i = wlen
