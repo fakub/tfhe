@@ -21,7 +21,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-25),
         .max_stdev = 0.012467,
     },
-    {   // A_CARRY_2_GATE_TFHE              54 ms
+    {   // A_CARRY_5_BS_BIN                 54 ms
         .pi = 2,
         .N = 1024,
         .k = 1,
@@ -34,7 +34,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-31.20),
         .max_stdev = 0.04167,
     },
-    {   // B_CARRY_3_GATE_2_BIT             57 ms
+    {   // B_CARRY_2_BS_BIN                 57 ms
         .pi = 2,
         .N = 1024,
         .k = 1,
@@ -47,7 +47,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-32.53),
         .max_stdev = 0.04167,
     },
-    {   // C_CARRY_4_BIT                    92 ms
+    {   // C_CARRY_2_BIT                    92 ms
         .pi = 4,
         .N = 1024,
         .k = 1,

@@ -12,9 +12,9 @@
 #include "tgsw.h"
 
 #define TFHE_LIB              0
-#define A_CARRY_2_GATE_TFHE   1
-#define B_CARRY_3_GATE_2_BIT  2
-#define C_CARRY_4_BIT         3
+#define A_CARRY_5_BS_BIN      1
+#define B_CARRY_2_BS_BIN      2
+#define C_CARRY_2_BIT         3
 #define D_PARALLEL_SC_1       4
 #define E_PARALLEL_SC_2       5
 #define F_PARALLEL_SC_3       6
@@ -23,7 +23,7 @@
 #define  PA_SCENARIO    D_PARALLEL_SC_1
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO    B_CARRY_3_GATE_2_BIT
+#define SEQ_SCENARIO    B_CARRY_2_BS_BIN
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1

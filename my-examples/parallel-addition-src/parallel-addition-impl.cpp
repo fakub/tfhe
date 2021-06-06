@@ -272,7 +272,7 @@ void sequential_add(LweSample *z,
 #endif
 
     //  SCENARIO binary with 5 bootstraps (ala TFHE Library)
-#if SEQ_SCENARIO == A_CARRY_2_GATE_TFHE
+#if SEQ_SCENARIO == A_CARRY_5_BS_BIN
 {
     // alloc aux arrays
     LweSample *carry    = new_LweSample_array(2, io_lwe_params);
@@ -318,7 +318,7 @@ void sequential_add(LweSample *z,
 }
 
     //  SCENARIO binary with 2 bootstraps
-#elif SEQ_SCENARIO == B_CARRY_3_GATE_2_BIT
+#elif SEQ_SCENARIO == B_CARRY_2_BS_BIN
 {
     // alloc carry
     LweSample *c = new_LweSample(io_lwe_params);
@@ -357,7 +357,7 @@ void sequential_add(LweSample *z,
 }
 
     //  SCENARIO quad with 5 bootstraps
-#elif SEQ_SCENARIO == C_CARRY_4_BIT
+#elif SEQ_SCENARIO == C_CARRY_2_BIT
 {
     printf("C");
 }

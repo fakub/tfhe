@@ -53,25 +53,38 @@ int32_t main(int32_t argc, char **argv)
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *seq_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(seq_tfhe_params);
 
-    // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
+    // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
     //TODO add scenario for beta = 4 by some macro
-    #define SEQ_WLEN 20
-    int32_t x_seq_plain[SEQ_WLEN] = {0,1,0,0,0,1,0,1,1,0,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
-    int32_t y_seq_plain[SEQ_WLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,0,1,1,0,1,0,0,1,};
-    int32_t z_seq_plain[SEQ_WLEN + 1];
+    #define SEQ_BITLEN 20
+#if (SEQ_SCENARIO == C_CARRY_2_BIT)
+    #define SEQ_WLEN ((SEQ_BITLEN) / 2)
+#else
+    #define SEQ_WLEN SEQ_BITLEN
+#endif
+    int32_t x_seq_plain[SEQ_BITLEN] = {0,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
+    int32_t y_seq_plain[SEQ_BITLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,0,0,1,};
+    int32_t z_seq_plain[SEQ_BITLEN + 1];
 
     int64_t exp_seq_sum = seq_eval(&x_seq_plain[0], SEQ_WLEN) + seq_eval(&y_seq_plain[0], SEQ_WLEN);
 
-    LweSample *x_seq = new_LweSample_array(SEQ_WLEN,     seq_io_lwe_params);   // for parallel addition
+    LweSample *x_seq = new_LweSample_array(SEQ_WLEN,     seq_io_lwe_params);   // for sequential addition
     LweSample *y_seq = new_LweSample_array(SEQ_WLEN,     seq_io_lwe_params);
     LweSample *z_seq = new_LweSample_array(SEQ_WLEN + 1, seq_io_lwe_params);
 
     // encrypt
     for (int32_t i = 0; i < SEQ_WLEN; i++)
     {
-        //TODO switch to seq_quad_sym_encr by some macro
+#if (SEQ_SCENARIO == C_CARRY_2_BIT)
+        seq_quad_sym_encr(x_seq + i,
+                          x_seq_plain[2*i] + 2*x_seq_plain[2*i+1], // combine 2 bits
+                          seq_tfhe_keys);
+        seq_quad_sym_encr(y_seq + i,
+                          y_seq_plain[2*i] + 2*y_seq_plain[2*i+1], // combine 2 bits
+                          seq_tfhe_keys);
+#else
         bin_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
         bin_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
+#endif
     }
 
     // print inputs
@@ -81,14 +94,23 @@ int32_t main(int32_t argc, char **argv)
     // x
     printf(" X  | +0 ");
     for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
+#if (SEQ_SCENARIO == C_CARRY_2_BIT)
+        printf("| %+d ", x_seq_plain[2*i] + 2*x_seq_plain[2*i+1]);
+#else
         printf("| %+d ", x_seq_plain[i]);
+#endif
     printf("| %+9ld\n", seq_eval(&x_seq_plain[0], SEQ_WLEN));
 
     // y
     printf(" Y  | +0 ");
     for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
+#if (SEQ_SCENARIO == C_CARRY_2_BIT)
+        printf("| %+d ", y_seq_plain[2*i] + 2*y_seq_plain[2*i+1]);
+#else
         printf("| %+d ", y_seq_plain[i]);
+#endif
     printf("| %+9ld\n", seq_eval(&y_seq_plain[0], SEQ_WLEN));
+    // ------------------------------------------------------
     for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
     printf("   ");
 
@@ -101,7 +123,11 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= SEQ_WLEN; i++)
+#if (SEQ_SCENARIO == C_CARRY_2_BIT)
+        z_seq_plain[i] = sym_decr(z_seq + i, seq_tfhe_keys);
+#else
         z_seq_plain[i] = bin_sym_decr(z_seq + i, seq_tfhe_keys);
+#endif
 
     // print results
     // z
@@ -142,7 +168,7 @@ int32_t main(int32_t argc, char **argv)
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *pa_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_tfhe_params);
 
-    // alloc plaintexts & samples (n.b., opposite order, i.e., big endian (?))
+    // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
     #define PA_WLEN 10
     int32_t x_pa_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
     int32_t y_pa_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
