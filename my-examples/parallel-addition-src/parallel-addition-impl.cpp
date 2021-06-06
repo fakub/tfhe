@@ -29,9 +29,10 @@ static void bs_set_tv_identity(Torus32 *const tv,
  *  @brief          Identity at positive half: [0, 2^PI / 2)
  *
  */
-static void bs_set_tv_pos_identity(Torus32 *const tv,
-                                   const uint32_t N,
-                                   const Torus32 MU);
+static void bs_set_tv_mod(Torus32 *const tv,
+                          const uint32_t N,
+                          const uint32_t mod,
+                          const Torus32 MU);
 
 /**
  *  @brief          Description
@@ -156,9 +157,10 @@ void bs_id(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
-void bs_pos_id(LweSample *result,
-               const LweSample *sample,
-               const TFheGateBootstrappingCloudKeySet *bk)
+void bs_mod(LweSample *result,
+            const LweSample *sample,
+            const uint32_t mod,
+            const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
     const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
@@ -166,7 +168,7 @@ void bs_pos_id(LweSample *result,
 
     // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);
-    bs_set_tv_pos_identity(&testvect->coefsT[0], N, MU);
+    bs_set_tv_mod(&testvect->coefsT[0], N, mod, MU);
 
     // call BS priv
     bs_with_tv(result, sample, bk, testvect);
@@ -415,9 +417,9 @@ void sequential_add(LweSample *z,
     //  SCENARIO quad with 5 bootstraps
 #elif SEQ_SCENARIO == C_CARRY_2_BIT
 {
-    // alloc carry & tmp
-    LweSample *c   = new_LweSample(io_lwe_params);
-    LweSample *tmp = new_LweSample(io_lwe_params);
+    // alloc carry & w
+    LweSample *c = new_LweSample(io_lwe_params);
+    LweSample *w = new_LweSample(io_lwe_params);
 
     // init c = 0
     lweNoiselessTrivial(c, 0, io_lwe_params);
@@ -431,19 +433,19 @@ void sequential_add(LweSample *z,
 #endif
 
         // z_i = ID(x_i + y_i + c)
-        // init tmp = 0
-        lweNoiselessTrivial(tmp, 0, io_lwe_params);
-        // tmp += x_i
-        lweAddTo(tmp, x + i, io_lwe_params);
-        // tmp += y_i
-        lweAddTo(tmp, y + i, io_lwe_params);
-        // tmp += c
-        lweAddTo(tmp,     c, io_lwe_params);
-        // bootstrap ID
-        bs_pos_id(z + i, tmp, bk);
+        // init w = 0
+        lweNoiselessTrivial(w, 0, io_lwe_params);
+        // w += x_i
+        lweAddTo(w, x + i, io_lwe_params);
+        // w += y_i
+        lweAddTo(w, y + i, io_lwe_params);
+        // w += c
+        lweAddTo(w,     c, io_lwe_params);
+        // z_i = w % 4
+        bs_mod(z + i, w, 4, bk);
 
-        // c = (z_i >= 4)
-        bs_pos_gleq(c, z + i, 4, bk);
+        // c = (w >= 4)
+        bs_pos_gleq(c, w, 4, bk);
 
 #ifdef DBG_OUT
         printf("Position #%d\n", i);
@@ -459,7 +461,7 @@ void sequential_add(LweSample *z,
     lweCopy(z + wlen, c, io_lwe_params);
 
     // cleanup
-    delete_LweSample(tmp);
+    delete_LweSample(w);
     delete_LweSample(c);
 }
 
@@ -604,10 +606,18 @@ static void bs_set_tv_identity(Torus32 *const tv,
     }
 }
 
-static void bs_set_tv_pos_identity(Torus32 *const tv,
-                                   const uint32_t N,
-                                   const Torus32 MU)
+static void bs_set_tv_mod(Torus32 *const tv,
+                          const uint32_t N,
+                          const uint32_t mod,
+                          const Torus32 MU)
 {
+    if ((mod > (1u << (PI - 1))) || mod == 0)
+    {
+        char buff[100];
+        sprintf(&buff[0], "Modulo for mod bootstrapping too large or zero: mod = %d > %d = 2^(pi-1).", mod, (1 << (PI - 1)));
+        die_soon(&buff[0]);
+    }
+
     uint32_t i, s;
 
     // make a 0-stair around zero (and 2^(PI-1))
@@ -619,7 +629,7 @@ static void bs_set_tv_pos_identity(Torus32 *const tv,
     for (s = 1u; s < (1u << (PI-1)); s++)
     {
         for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
-            tv[i] = s * MU;
+            tv[i] = (s % mod) * MU;
     }
 }
 

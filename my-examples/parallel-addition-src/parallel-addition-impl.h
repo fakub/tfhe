@@ -23,12 +23,12 @@
 #define SEQ_SCENARIO    C_CARRY_2_BIT
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO    D_PARALLEL_SC_1
+#define  PA_SCENARIO    E_PARALLEL_SC_2
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1
 
-#define DBG_OUT
+//~ #define DBG_OUT
 
 //  ----    do not edit    ----
 #define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO   // by default, use TFHE params derived for particular scenario
@@ -111,9 +111,10 @@ void bs_id(LweSample *result,
  *  @brief          Identity at positive half
  *
  */
-void bs_pos_id(LweSample *result,
-               const LweSample *sample,
-               const TFheGateBootstrappingCloudKeySet *bk);
+void bs_mod(LweSample *result,
+            const LweSample *sample,
+            const uint32_t mod,
+            const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
  *  @brief          Description

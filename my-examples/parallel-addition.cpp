@@ -263,7 +263,7 @@ int32_t main(int32_t argc, char **argv)
 
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
-    printf(" Encr -> Decr  | Id. | <=> 3 | == 2 | timing (Id.)\n");
+    printf(" Encr -> Decr    | Id.  | <=> 3 | == 2 | timing (Id.)\n");
     printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < (1 << PI); i++)
@@ -290,7 +290,7 @@ int32_t main(int32_t argc, char **argv)
         int32_t gl_plain    = sym_decr(gl, bs_tfhe_keys);
         int32_t eq_plain    = sym_decr(eq, bs_tfhe_keys);
 
-        printf(" D[E(%+d)] = %+d |  %+d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI-1)), a_plain,
+        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,
                                                             (end_id - begin_id) / 1000);
     }
