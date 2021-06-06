@@ -18,12 +18,20 @@
 //
 
 /**
- *  @brief          Description
+ *  @brief          Identity around zero: [-2^PI / 4, 2^PI / 4]
  *
  */
 static void bs_set_tv_identity(Torus32 *const tv,
                                const uint32_t N,
                                const Torus32 MU);
+
+/**
+ *  @brief          Identity at positive half: [0, 2^PI / 2)
+ *
+ */
+static void bs_set_tv_pos_identity(Torus32 *const tv,
+                                   const uint32_t N,
+                                   const Torus32 MU);
 
 /**
  *  @brief          Description
@@ -33,6 +41,15 @@ static void bs_set_tv_gleq(Torus32 *const tv,
                            const uint32_t N,
                            const uint32_t thr,
                            const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void bs_set_tv_pos_gleq(Torus32 *const tv,
+                               const uint32_t N,
+                               const uint32_t thr,
+                               const Torus32 MU);
 
 /**
  *  @brief          Description
@@ -139,6 +156,25 @@ void bs_id(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
+void bs_pos_id(LweSample *result,
+               const LweSample *sample,
+               const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
+    const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    bs_set_tv_pos_identity(&testvect->coefsT[0], N, MU);
+
+    // call BS priv
+    bs_with_tv(result, sample, bk, testvect);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+
 void bs_gleq(LweSample *result,
              const LweSample *sample,
              const uint32_t thr,
@@ -151,6 +187,26 @@ void bs_gleq(LweSample *result,
     // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);
     bs_set_tv_gleq(&testvect->coefsT[0], N, thr, MU);
+
+    // call BS priv
+    bs_with_tv(result, sample, bk, testvect);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+
+void bs_pos_gleq(LweSample *result,
+                 const LweSample *sample,
+                 const uint32_t thr,
+                 const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
+    const Torus32 MU = modSwitchToTorus32(1, 1 << PI);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    bs_set_tv_pos_gleq(&testvect->coefsT[0], N, thr, MU);
 
     // call BS priv
     bs_with_tv(result, sample, bk, testvect);
@@ -359,7 +415,52 @@ void sequential_add(LweSample *z,
     //  SCENARIO quad with 5 bootstraps
 #elif SEQ_SCENARIO == C_CARRY_2_BIT
 {
-    printf("C");
+    // alloc carry & tmp
+    LweSample *c   = new_LweSample(io_lwe_params);
+    LweSample *tmp = new_LweSample(io_lwe_params);
+
+    // init c = 0
+    lweNoiselessTrivial(c, 0, io_lwe_params);
+
+    // calc z's and carry
+    for (uint32_t i = 0; i < wlen; i++)
+    {
+#ifndef DBG_OUT
+        // progress bar ...
+        printf("-");fflush(stdout);
+#endif
+
+        // z_i = ID(x_i + y_i + c)
+        // init tmp = 0
+        lweNoiselessTrivial(tmp, 0, io_lwe_params);
+        // tmp += x_i
+        lweAddTo(tmp, x + i, io_lwe_params);
+        // tmp += y_i
+        lweAddTo(tmp, y + i, io_lwe_params);
+        // tmp += c
+        lweAddTo(tmp,     c, io_lwe_params);
+        // bootstrap ID
+        bs_pos_id(z + i, tmp, bk);
+
+        // c = (z_i >= 4)
+        bs_pos_gleq(c, z + i, 4, bk);
+
+#ifdef DBG_OUT
+        printf("Position #%d\n", i);
+        int32_t x_plain = sym_decr(x + i, sk);
+        int32_t y_plain = sym_decr(y + i, sk);
+        int32_t c_plain = sym_decr(c,     sk);
+        int32_t z_plain = sym_decr(z + i, sk);
+        printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
+#endif
+    }
+
+    // i = wlen
+    lweCopy(z + wlen, c, io_lwe_params);
+
+    // cleanup
+    delete_LweSample(tmp);
+    delete_LweSample(c);
 }
 
 #else
@@ -433,6 +534,32 @@ void die_soon(const char* message)
     abort();
 }
 
+int64_t quad_eval(const int32_t *const x,
+                  const uint32_t len)
+{
+    int64_t r = 0;
+
+    for (uint32_t i = 0; i < len; i++)
+    {
+        r += x[i] * (1 << (2*i));
+    }
+
+    return r;
+}
+
+int64_t bin_eval(const int32_t *const x,
+                 const uint32_t len)
+{
+    int64_t r = 0;
+
+    for (uint32_t i = 0; i < len; i++)
+    {
+        r += x[i] * (1 << i);
+    }
+
+    return r;
+}
+
 
 // =============================================================================
 //
@@ -477,6 +604,25 @@ static void bs_set_tv_identity(Torus32 *const tv,
     }
 }
 
+static void bs_set_tv_pos_identity(Torus32 *const tv,
+                                   const uint32_t N,
+                                   const Torus32 MU)
+{
+    uint32_t i, s;
+
+    // make a 0-stair around zero (and 2^(PI-1))
+    for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    // from 1 to 2^(PI-1) - 1
+    for (s = 1u; s < (1u << (PI-1)); s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = s * MU;
+    }
+}
+
 static void bs_set_tv_gleq(Torus32 *const tv,
                            const uint32_t N,
                            const uint32_t thr,
@@ -485,7 +631,7 @@ static void bs_set_tv_gleq(Torus32 *const tv,
     if ((thr > (1u << (PI - 2))) || thr == 0)
     {
         char buff[100];
-        sprintf(&buff[0], "Threshold for bootstrapping too large or zero: thr = %d > %d = 2^(pi-2).", thr, (1 << (PI - 2)));
+        sprintf(&buff[0], "Threshold for around-zero bootstrapping too large or zero: thr = %d > %d = 2^(pi-2).", thr, (1 << (PI - 2)));
         die_soon(&buff[0]);
     }
 
@@ -513,6 +659,39 @@ static void bs_set_tv_gleq(Torus32 *const tv,
     {
         for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
             tv[i] = 0 * MU;
+    }
+}
+
+static void bs_set_tv_pos_gleq(Torus32 *const tv,
+                               const uint32_t N,
+                               const uint32_t thr,
+                               const Torus32 MU)
+{
+    if ((thr >= (1u << (PI - 1))) || thr == 0)
+    {
+        char buff[100];
+        sprintf(&buff[0], "Threshold for positive bootstrapping too large or zero: thr = %d >= %d = 2^(pi-1).", thr, (1 << (PI - 1)));
+        die_soon(&buff[0]);
+    }
+
+    uint32_t i, s;
+
+    // make a 0-stair around zero
+    for (i = 0; i < (N >> PI); i++)     tv[i] = 0;
+    for (i = N - (N >> PI); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    // 0's first part
+    for (s = 1; s < thr; s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 0 * MU;
+    }
+    // 1's
+    for (s = thr; s < (1u << (PI-1)); s++)
+    {
+        for (i = s * (N >> (PI-1)) - (N >> PI);  i < s * (N >> (PI-1)) + (N >> PI); i++)
+            tv[i] = 1 * MU;
     }
 }
 
@@ -727,30 +906,4 @@ static void paral_calc_zi(LweSample *zi,
 
     // cleanup
     delete_LweSample(tmpz);
-}
-
-int64_t paral_eval(const int32_t *const x,
-                   const uint32_t len)
-{
-    int64_t r = 0;
-
-    for (uint32_t i = 0; i < len; i++)
-    {
-        r += x[i] * (1 << (2*i));
-    }
-
-    return r;
-}
-
-int64_t seq_eval(const int32_t *const x,
-                 const uint32_t len)
-{
-    int64_t r = 0;
-
-    for (uint32_t i = 0; i < len; i++)
-    {
-        r += x[i] * (1 << i);
-    }
-
-    return r;
 }

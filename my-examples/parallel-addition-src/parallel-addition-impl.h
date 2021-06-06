@@ -19,11 +19,11 @@
 #define E_PARALLEL_SC_2       5
 #define F_PARALLEL_SC_3       6
 
+// choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
+#define SEQ_SCENARIO    C_CARRY_2_BIT
+
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
 #define  PA_SCENARIO    D_PARALLEL_SC_1
-
-// choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO    B_CARRY_2_BS_BIN
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1
@@ -100,12 +100,20 @@ void setup_TFHE_params(const int tfhe_params_index,
 //
 
 /**
- *  @brief          Description
+ *  @brief          Identity around zero
  *
  */
 void bs_id(LweSample *result,
            const LweSample *sample,
            const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
+ *  @brief          Identity at positive half
+ *
+ */
+void bs_pos_id(LweSample *result,
+               const LweSample *sample,
+               const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
  *  @brief          Description
@@ -115,6 +123,15 @@ void bs_gleq(LweSample *result,
              const LweSample *sample,
              const uint32_t thr,
              const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void bs_pos_gleq(LweSample *result,
+                 const LweSample *sample,
+                 const uint32_t thr,
+                 const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
  *  @brief          Description
@@ -243,14 +260,14 @@ void die_soon(const char* message);
  *  @brief          Description
  *
  */
-int64_t paral_eval(const int32_t *const x,
-                   const uint32_t len);
+int64_t quad_eval(const int32_t *const x,
+                  const uint32_t len);
 
 /**
  *  @brief          Description
  *
  */
-int64_t seq_eval(const int32_t *const x,
+int64_t bin_eval(const int32_t *const x,
                  const uint32_t len);
 
 #endif // #ifndef PARALLEL_ADDITION_IMPL_H

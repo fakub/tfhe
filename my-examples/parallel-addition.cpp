@@ -54,16 +54,35 @@ int32_t main(int32_t argc, char **argv)
     TFheGateBootstrappingSecretKeySet *seq_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(seq_tfhe_params);
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
-    //TODO add scenario for beta = 4 by some macro
     #define SEQ_BITLEN 20
+    int32_t x_seq_plain_bin[SEQ_BITLEN] = {0,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
+    int32_t y_seq_plain_bin[SEQ_BITLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,0,0,1,};
+
+    // base 4 scenario C
 #if (SEQ_SCENARIO == C_CARRY_2_BIT)
     #define SEQ_WLEN ((SEQ_BITLEN) / 2)
+    int32_t x_seq_plain[SEQ_WLEN];
+    int32_t y_seq_plain[SEQ_WLEN];
+    for (int32_t i = 0; i < SEQ_WLEN; i++)
+    {
+        x_seq_plain[i] = x_seq_plain_bin[2*i] + 2*x_seq_plain_bin[2*i+1];
+        y_seq_plain[i] = y_seq_plain_bin[2*i] + 2*y_seq_plain_bin[2*i+1];
+    }
+    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &quad_eval;
+
+    // base 2 scenarios A, B
 #else
     #define SEQ_WLEN SEQ_BITLEN
+    int32_t x_seq_plain[SEQ_WLEN];
+    int32_t y_seq_plain[SEQ_WLEN];
+    for (int32_t i = 0; i < SEQ_WLEN; i++)
+    {
+        x_seq_plain[i] = x_seq_plain_bin[i];
+        y_seq_plain[i] = y_seq_plain_bin[i];
+    }
+    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &bin_eval;
 #endif
-    int32_t x_seq_plain[SEQ_BITLEN] = {0,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
-    int32_t y_seq_plain[SEQ_BITLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,0,0,1,};
-    int32_t z_seq_plain[SEQ_BITLEN + 1];
+    int32_t z_seq_plain[SEQ_WLEN + 1];
 
     int64_t exp_seq_sum = seq_eval(&x_seq_plain[0], SEQ_WLEN) + seq_eval(&y_seq_plain[0], SEQ_WLEN);
 
@@ -75,12 +94,8 @@ int32_t main(int32_t argc, char **argv)
     for (int32_t i = 0; i < SEQ_WLEN; i++)
     {
 #if (SEQ_SCENARIO == C_CARRY_2_BIT)
-        seq_quad_sym_encr(x_seq + i,
-                          x_seq_plain[2*i] + 2*x_seq_plain[2*i+1], // combine 2 bits
-                          seq_tfhe_keys);
-        seq_quad_sym_encr(y_seq + i,
-                          y_seq_plain[2*i] + 2*y_seq_plain[2*i+1], // combine 2 bits
-                          seq_tfhe_keys);
+        seq_quad_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
+        seq_quad_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
 #else
         bin_sym_encr(x_seq + i, x_seq_plain[i], seq_tfhe_keys);
         bin_sym_encr(y_seq + i, y_seq_plain[i], seq_tfhe_keys);
@@ -94,21 +109,13 @@ int32_t main(int32_t argc, char **argv)
     // x
     printf(" X  | +0 ");
     for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
-#if (SEQ_SCENARIO == C_CARRY_2_BIT)
-        printf("| %+d ", x_seq_plain[2*i] + 2*x_seq_plain[2*i+1]);
-#else
         printf("| %+d ", x_seq_plain[i]);
-#endif
     printf("| %+9ld\n", seq_eval(&x_seq_plain[0], SEQ_WLEN));
 
     // y
     printf(" Y  | +0 ");
     for (int32_t i = SEQ_WLEN - 1; i >= 0; i--)
-#if (SEQ_SCENARIO == C_CARRY_2_BIT)
-        printf("| %+d ", y_seq_plain[2*i] + 2*y_seq_plain[2*i+1]);
-#else
         printf("| %+d ", y_seq_plain[i]);
-#endif
     printf("| %+9ld\n", seq_eval(&y_seq_plain[0], SEQ_WLEN));
     // ------------------------------------------------------
     for (int32_t i = 0; i < SEQ_WLEN+2; i++) printf("-----");
@@ -174,7 +181,7 @@ int32_t main(int32_t argc, char **argv)
     int32_t y_pa_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
     int32_t z_pa_plain[PA_WLEN + 1];
 
-    int64_t exp_pa_sum = paral_eval(&x_pa_plain[0], PA_WLEN) + paral_eval(&y_pa_plain[0], PA_WLEN);
+    int64_t exp_pa_sum = quad_eval(&x_pa_plain[0], PA_WLEN) + quad_eval(&y_pa_plain[0], PA_WLEN);
 
     LweSample *x_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);   // for parallel addition
     LweSample *y_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);
@@ -195,13 +202,13 @@ int32_t main(int32_t argc, char **argv)
     printf(" X  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
         printf("| %+d ", x_pa_plain[i]);
-    printf("| %+9ld\n", paral_eval(&x_pa_plain[0], PA_WLEN));
+    printf("| %+9ld\n", quad_eval(&x_pa_plain[0], PA_WLEN));
 
     // y
     printf(" Y  | +0 ");
     for (int32_t i = PA_WLEN - 1; i >= 0; i--)
         printf("| %+d ", y_pa_plain[i]);
-    printf("| %+9ld\n", paral_eval(&y_pa_plain[0], PA_WLEN));
+    printf("| %+9ld\n", quad_eval(&y_pa_plain[0], PA_WLEN));
     for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
     printf("   ");
 
@@ -220,8 +227,8 @@ int32_t main(int32_t argc, char **argv)
         printf("| %+d ", z_pa_plain[i]);
     }
     printf("| %+9ld   %s (exp. %+9ld)\n",
-                            paral_eval(&z_pa_plain[0], PA_WLEN + 1),
-                            exp_pa_sum == paral_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            quad_eval(&z_pa_plain[0], PA_WLEN + 1),
+                            exp_pa_sum == quad_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
                             exp_pa_sum);
     for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
     printf("\n");
