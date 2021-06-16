@@ -25,10 +25,13 @@
 #define I_PARALLEL_4          9
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO    B_CARRY_2_BS_BIN
+#define SEQ_SCENARIO        B_CARRY_2_BS_BIN
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO    H_PARALLEL_4
+#define  PA_SCENARIO_BIN    D_PARALLEL_2
+
+// choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
+#define  PA_SCENARIO_QUAD   H_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    G_PARALLEL_4
@@ -36,7 +39,7 @@
 //~ #define DBG_OUT
 
 //  ----    do not edit    ----
-#define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO   // by default, use TFHE params derived for particular scenario
+#define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO_QUAD   // by default, use TFHE params derived for particular scenario
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO   // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 6
@@ -132,9 +135,17 @@ void seq_quad_sym_encr(LweSample *ct,
  *  @brief          Description
  *
  */
-void paral_sym_encr(LweSample *ct,
-                    const int32_t message,
-                    const TFheGateBootstrappingSecretKeySet *sk);
+void paral_sym_encr_quad(LweSample *ct,
+                         const int32_t message,
+                         const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void paral_sym_encr_bin(LweSample *ct,
+                        const int32_t message,
+                        const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
  *  @brief          Description
@@ -183,7 +194,7 @@ void sequential_add(LweSample *z,
                     const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
-//  Parallel Addition
+//  Parallel Addition (Bin)
 //
 
 /**
@@ -196,11 +207,31 @@ void sequential_add(LweSample *z,
  *  @param[in]      Bootstrapping Keys
  *
  */
-void parallel_add(LweSample *z,
-                  const LweSample *x,
-                  const LweSample *y,
-                  const uint32_t wlen,
-                  const TFheGateBootstrappingCloudKeySet *bk);
+void parallel_add_bin(LweSample *z,
+                      const LweSample *x,
+                      const LweSample *y,
+                      const uint32_t wlen,
+                      const TFheGateBootstrappingCloudKeySet *bk);
+
+// -----------------------------------------------------------------------------
+//  Parallel Addition (Quad)
+//
+
+/**
+ *  @brief          Main Parallel Addition Function
+ *
+ *  @param[out]     LWE Sample (length +wlen+ + 1)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      Length of LWE samples
+ *  @param[in]      Bootstrapping Keys
+ *
+ */
+void parallel_add_quad(LweSample *z,
+                       const LweSample *x,
+                       const LweSample *y,
+                       const uint32_t wlen,
+                       const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
 //  Misc

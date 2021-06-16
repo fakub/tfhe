@@ -15,8 +15,9 @@
 
 #include <parallel-addition-impl.h>
 
-#define SEQ_TEST
-#define  PA_TEST
+#define  SEQ_TEST
+#define  PA_TEST_BIN
+#define  PA_TEST_QUAD
 #define  BS_TEST
 
 using namespace std;
@@ -157,86 +158,169 @@ int32_t main(int32_t argc, char **argv)
 #endif
 
 
-#ifdef PA_TEST
+#ifdef PA_TEST_BIN   //TODO
     // -------------------------------------------------------------------------
     //
     //  Parallel Addition Test
     //
-    if (PA_SCENARIO != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    if (PA_SCENARIO_BIN != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
     printf("\n\n================================================================================\n");
     printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
-    printf("Scenario: %c\n", 'A' + PA_SCENARIO - 1);
+    printf("Scenario: %c\n", 'A' + PA_SCENARIO_QUAD - 1);
     printf("Params:   %c\n\n", 'A' + PA_TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
     // setup TFHE params
-    TFheGateBootstrappingParameterSet *pa_tfhe_params = NULL;
-    setup_TFHE_params(PA_TFHE_PARAMS_INDEX, &pa_tfhe_params);
-    const LweParams *pa_io_lwe_params = pa_tfhe_params->in_out_params;
+    TFheGateBootstrappingParameterSet *pa_bin_tfhe_params = NULL;
+    setup_TFHE_params(PA_TFHE_PARAMS_INDEX, &pa_bin_tfhe_params);
+    const LweParams *pa_bin_io_lwe_params = pa_bin_tfhe_params->in_out_params;
     // generate TFHE secret keys
-    TFheGateBootstrappingSecretKeySet *pa_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_tfhe_params);
+    TFheGateBootstrappingSecretKeySet *pa_bin_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_bin_tfhe_params);
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
-    #define PA_WLEN 10
-    int32_t x_pa_plain[PA_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
-    int32_t y_pa_plain[PA_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
-    int32_t z_pa_plain[PA_WLEN + 1];
+    #define PA_BIN_WLEN 20
+    int32_t x_pa_bin_plain[PA_BIN_WLEN] = {0,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
+    int32_t y_pa_bin_plain[PA_BIN_WLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,0,0,1,};
+    int32_t z_pa_bin_plain[PA_BIN_WLEN + 1];
 
-    int64_t exp_pa_sum = quad_eval(&x_pa_plain[0], PA_WLEN) + quad_eval(&y_pa_plain[0], PA_WLEN);
+    int64_t exp_pa_bin_sum = bin_eval(&x_pa_bin_plain[0], PA_BIN_WLEN) + bin_eval(&y_pa_bin_plain[0], PA_BIN_WLEN);
 
-    LweSample *x_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);   // for parallel addition
-    LweSample *y_pa = new_LweSample_array(PA_WLEN,     pa_io_lwe_params);
-    LweSample *z_pa = new_LweSample_array(PA_WLEN + 1, pa_io_lwe_params);
+    LweSample *x_pa_bin = new_LweSample_array(PA_BIN_WLEN,     pa_bin_io_lwe_params);   // for parallel addition
+    LweSample *y_pa_bin = new_LweSample_array(PA_BIN_WLEN,     pa_bin_io_lwe_params);
+    LweSample *z_pa_bin = new_LweSample_array(PA_BIN_WLEN + 1, pa_bin_io_lwe_params);
 
     // encrypt
-    for (int32_t i = 0; i < PA_WLEN; i++)
+    for (int32_t i = 0; i < PA_BIN_WLEN; i++)
     {
-        paral_sym_encr(x_pa + i, x_pa_plain[i], pa_tfhe_keys);
-        paral_sym_encr(y_pa + i, y_pa_plain[i], pa_tfhe_keys);
+        paral_sym_encr_bin(x_pa_bin + i, x_pa_bin_plain[i], pa_bin_tfhe_keys);
+        paral_sym_encr_bin(y_pa_bin + i, y_pa_bin_plain[i], pa_bin_tfhe_keys);
     }
 
     // print inputs
-    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+    for (int32_t i = 0; i < PA_BIN_WLEN+2; i++) printf("-----");
     printf("\n");
 
     // x
     printf(" X  | +0 ");
-    for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        printf("| %+d ", x_pa_plain[i]);
-    printf("| %+9ld\n", quad_eval(&x_pa_plain[0], PA_WLEN));
+    for (int32_t i = PA_BIN_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_pa_bin_plain[i]);
+    printf("| %+9ld\n", bin_eval(&x_pa_bin_plain[0], PA_BIN_WLEN));
 
     // y
     printf(" Y  | +0 ");
-    for (int32_t i = PA_WLEN - 1; i >= 0; i--)
-        printf("| %+d ", y_pa_plain[i]);
-    printf("| %+9ld\n", quad_eval(&y_pa_plain[0], PA_WLEN));
-    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+    for (int32_t i = PA_BIN_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", y_pa_bin_plain[i]);
+    printf("| %+9ld\n", bin_eval(&y_pa_bin_plain[0], PA_BIN_WLEN));
+    for (int32_t i = 0; i < PA_BIN_WLEN+2; i++) printf("-----");
     printf("   ");
 
     // parallel addition
-    parallel_add(z_pa, x_pa, y_pa, PA_WLEN, &(pa_tfhe_keys->cloud));
+    parallel_add_quad(z_pa_bin, x_pa_bin, y_pa_bin, PA_BIN_WLEN, &(pa_bin_tfhe_keys->cloud));
 
     // decrypt
-    for (int32_t i = 0; i <= PA_WLEN; i++)
-        z_pa_plain[i] = sym_decr(z_pa + i, pa_tfhe_keys);
+    for (int32_t i = 0; i <= PA_BIN_WLEN; i++)
+        z_pa_bin_plain[i] = sym_decr(z_pa_bin + i, pa_bin_tfhe_keys);
 
     // print results
     // z
     printf(" Z  ");
-    for (int32_t i = PA_WLEN; i >= 0; i--)
+    for (int32_t i = PA_BIN_WLEN; i >= 0; i--)
+    {
+        printf("| %+d ", z_pa_bin_plain[i]);
+    }
+    printf("| %+9ld   %s (exp. %+9ld)\n",
+                            bin_eval(&z_pa_bin_plain[0], PA_BIN_WLEN + 1),
+                            exp_pa_bin_sum == bin_eval(&z_pa_bin_plain[0], PA_BIN_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_pa_bin_sum);
+    for (int32_t i = 0; i < PA_BIN_WLEN+2; i++) printf("-----");
+    printf("\n");
+
+    // cleanup
+    delete_LweSample_array(PA_BIN_WLEN,     x_pa_bin);
+    delete_LweSample_array(PA_BIN_WLEN,     y_pa_bin);
+    delete_LweSample_array(PA_BIN_WLEN + 1, z_pa_bin);
+#endif
+
+
+#ifdef PA_TEST_QUAD
+    // -------------------------------------------------------------------------
+    //
+    //  Parallel Addition Test
+    //
+    if (PA_SCENARIO_QUAD != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    printf("\n\n================================================================================\n");
+    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
+    printf("Scenario: %c\n", 'A' + PA_SCENARIO_QUAD - 1);
+    printf("Params:   %c\n\n", 'A' + PA_TFHE_PARAMS_INDEX - 1);fflush(stdout);
+
+    // setup TFHE params
+    TFheGateBootstrappingParameterSet *pa_quad_tfhe_params = NULL;
+    setup_TFHE_params(PA_TFHE_PARAMS_INDEX, &pa_quad_tfhe_params);
+    const LweParams *pa_quad_io_lwe_params = pa_quad_tfhe_params->in_out_params;
+    // generate TFHE secret keys
+    TFheGateBootstrappingSecretKeySet *pa_quad_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_quad_tfhe_params);
+
+    // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
+    #define PA_QUAD_WLEN 10
+    int32_t x_pa_plain[PA_QUAD_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
+    int32_t y_pa_plain[PA_QUAD_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
+    int32_t z_pa_plain[PA_QUAD_WLEN + 1];
+
+    int64_t exp_pa_quad_sum = quad_eval(&x_pa_plain[0], PA_QUAD_WLEN) + quad_eval(&y_pa_plain[0], PA_QUAD_WLEN);
+
+    LweSample *x_pa_quad = new_LweSample_array(PA_QUAD_WLEN,     pa_quad_io_lwe_params);   // for parallel addition
+    LweSample *y_pa_quad = new_LweSample_array(PA_QUAD_WLEN,     pa_quad_io_lwe_params);
+    LweSample *z_pa_quad = new_LweSample_array(PA_QUAD_WLEN + 1, pa_quad_io_lwe_params);
+
+    // encrypt
+    for (int32_t i = 0; i < PA_QUAD_WLEN; i++)
+    {
+        paral_sym_encr_quad(x_pa_quad + i, x_pa_plain[i], pa_quad_tfhe_keys);
+        paral_sym_encr_quad(y_pa_quad + i, y_pa_plain[i], pa_quad_tfhe_keys);
+    }
+
+    // print inputs
+    for (int32_t i = 0; i < PA_QUAD_WLEN+2; i++) printf("-----");
+    printf("\n");
+
+    // x
+    printf(" X  | +0 ");
+    for (int32_t i = PA_QUAD_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_pa_plain[i]);
+    printf("| %+9ld\n", quad_eval(&x_pa_plain[0], PA_QUAD_WLEN));
+
+    // y
+    printf(" Y  | +0 ");
+    for (int32_t i = PA_QUAD_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", y_pa_plain[i]);
+    printf("| %+9ld\n", quad_eval(&y_pa_plain[0], PA_QUAD_WLEN));
+    for (int32_t i = 0; i < PA_QUAD_WLEN+2; i++) printf("-----");
+    printf("   ");
+
+    // parallel addition
+    parallel_add_quad(z_pa_quad, x_pa_quad, y_pa_quad, PA_QUAD_WLEN, &(pa_quad_tfhe_keys->cloud));
+
+    // decrypt
+    for (int32_t i = 0; i <= PA_QUAD_WLEN; i++)
+        z_pa_plain[i] = sym_decr(z_pa_quad + i, pa_quad_tfhe_keys);
+
+    // print results
+    // z
+    printf(" Z  ");
+    for (int32_t i = PA_QUAD_WLEN; i >= 0; i--)
     {
         printf("| %+d ", z_pa_plain[i]);
     }
     printf("| %+9ld   %s (exp. %+9ld)\n",
-                            quad_eval(&z_pa_plain[0], PA_WLEN + 1),
-                            exp_pa_sum == quad_eval(&z_pa_plain[0], PA_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                            exp_pa_sum);
-    for (int32_t i = 0; i < PA_WLEN+2; i++) printf("-----");
+                            quad_eval(&z_pa_plain[0], PA_QUAD_WLEN + 1),
+                            exp_pa_quad_sum == quad_eval(&z_pa_plain[0], PA_QUAD_WLEN + 1) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_pa_quad_sum);
+    for (int32_t i = 0; i < PA_QUAD_WLEN+2; i++) printf("-----");
     printf("\n");
 
     // cleanup
-    delete_LweSample_array(PA_WLEN,     x_pa);
-    delete_LweSample_array(PA_WLEN,     y_pa);
-    delete_LweSample_array(PA_WLEN + 1, z_pa);
+    delete_LweSample_array(PA_QUAD_WLEN,     x_pa_quad);
+    delete_LweSample_array(PA_QUAD_WLEN,     y_pa_quad);
+    delete_LweSample_array(PA_QUAD_WLEN + 1, z_pa_quad);
 #endif
 
 
@@ -313,9 +397,13 @@ int32_t main(int32_t argc, char **argv)
     delete_gate_bootstrapping_secret_keyset(seq_tfhe_keys);
     delete_gate_bootstrapping_parameters(   seq_tfhe_params);
 #endif
-#ifdef  PA_TEST
-    delete_gate_bootstrapping_secret_keyset( pa_tfhe_keys);
-    delete_gate_bootstrapping_parameters(    pa_tfhe_params);
+#ifdef  PA_TEST_BIN
+    delete_gate_bootstrapping_secret_keyset( pa_bin_tfhe_keys);
+    delete_gate_bootstrapping_parameters(    pa_bin_tfhe_params);
+#endif
+#ifdef  PA_TEST_QUAD
+    delete_gate_bootstrapping_secret_keyset( pa_quad_tfhe_keys);
+    delete_gate_bootstrapping_parameters(    pa_quad_tfhe_params);
 #endif
 #ifdef  BS_TEST
     delete_gate_bootstrapping_secret_keyset( bs_tfhe_keys);
