@@ -782,8 +782,8 @@ static void paral_calc_qi(LweSample *qi,
     // progress bar ...
     printf("-");fflush(stdout);
 
-    //  SCENARIO #1
-#if PA_SCENARIO == D_PARALLEL_SC_1
+    //  SCENARIO IIb-G
+#if PA_SCENARIO == G_PARALLEL_4
     {
         // aux variables
         LweSample *r1 = new_LweSample(io_lwe_params);
@@ -817,8 +817,8 @@ static void paral_calc_qi(LweSample *qi,
         lweAddTo(qi,           r23, io_lwe_params);
     }
 
-    //  SCENARIO #2
-#elif PA_SCENARIO == E_PARALLEL_SC_2
+    //  SCENARIO IIb-H
+#elif PA_SCENARIO == H_PARALLEL_4
     {
         // aux variables
         LweSample *r1 = new_LweSample(io_lwe_params);
@@ -849,8 +849,8 @@ static void paral_calc_qi(LweSample *qi,
         lweAddTo(qi,           r23, io_lwe_params);
     }
 
-    //  SCENARIO #3
-#elif PA_SCENARIO == F_PARALLEL_SC_3
+    //  SCENARIO IIb-I
+#elif PA_SCENARIO == I_PARALLEL_4
     {
         // aux variables
         LweSample *r1 = new_LweSample(io_lwe_params);

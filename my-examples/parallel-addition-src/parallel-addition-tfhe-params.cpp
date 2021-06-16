@@ -60,7 +60,46 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-28.12),
         .max_stdev = 0.01042,
     },
-    {   // D_PARALLEL_SC_1                  106 ms
+    {   // D_PARALLEL_2                     xxx ms
+        .pi = 3,                            //TODO FIXME
+        .N = 1024,
+        .k = 1,
+        .n = 540,
+        .bk_l = 2,
+        .bk_Bgbit = 10,
+        .ks_basebit = 1,
+        .ks_length = 15,
+        .ks_stdev = pow(2.,-17.62),
+        .bk_stdev = pow(2.,-31.00),
+        .max_stdev = 0.01042,
+    },
+    {   // E_PARALLEL_2                     xxx ms
+        .pi = 4,                            //TODO FIXME
+        .N = 1024,
+        .k = 1,
+        .n = 540,
+        .bk_l = 2,
+        .bk_Bgbit = 10,
+        .ks_basebit = 1,
+        .ks_length = 15,
+        .ks_stdev = pow(2.,-17.62),
+        .bk_stdev = pow(2.,-31.00),
+        .max_stdev = 0.01042,
+    },
+    {   // F_PARALLEL_2                     xxx ms
+        .pi = 5,                            //TODO FIXME
+        .N = 1024,
+        .k = 1,
+        .n = 570,
+        .bk_l = 2,
+        .bk_Bgbit = 11,
+        .ks_basebit = 1,
+        .ks_length = 16,
+        .ks_stdev = pow(2.,-18.67),
+        .bk_stdev = pow(2.,-33.04),
+        .max_stdev = 0.005208,
+    },
+    {   // G_PARALLEL_4                     106 ms
         .pi = 4,
         .N = 1024,
         .k = 1,
@@ -73,7 +112,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-31.00),
         .max_stdev = 0.01042,
     },
-    {   // E_PARALLEL_SC_2                  113 ms
+    {   // H_PARALLEL_4                     113 ms
         .pi = 5,
         .N = 1024,
         .k = 1,
@@ -86,7 +125,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_stdev = pow(2.,-33.04),
         .max_stdev = 0.005208,
     },
-    {   // F_PARALLEL_SC_3                  512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
+    {   // I_PARALLEL_4                     512 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
         //                                          probably 2^-49 is just too close to the precision of double)
         .pi = 7,
         .N = 4096,

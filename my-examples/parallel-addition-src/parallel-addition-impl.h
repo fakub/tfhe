@@ -15,18 +15,21 @@
 #define A_CARRY_5_BS_BIN      1
 #define B_CARRY_2_BS_BIN      2
 #define C_CARRY_2_BIT         3
-#define D_PARALLEL_SC_1       4
-#define E_PARALLEL_SC_2       5
-#define F_PARALLEL_SC_3       6
+#define D_PARALLEL_2          4     // D_PARALLEL_SC_1
+#define E_PARALLEL_2          5     // E_PARALLEL_SC_2
+#define F_PARALLEL_2          6     // F_PARALLEL_SC_3
+#define G_PARALLEL_4          7
+#define H_PARALLEL_4          8
+#define I_PARALLEL_4          9
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO    C_CARRY_2_BIT
+#define SEQ_SCENARIO    B_CARRY_2_BS_BIN
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO    E_PARALLEL_SC_2
+#define  PA_SCENARIO    H_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
-#define BS_TFHE_PARAMS_INDEX    D_PARALLEL_SC_1
+#define BS_TFHE_PARAMS_INDEX    G_PARALLEL_4
 
 //~ #define DBG_OUT
 
@@ -34,7 +37,7 @@
 #define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO   // by default, use TFHE params derived for particular scenario
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO   // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
-#define N_PARALLEL_SCENARIOS 3
+#define N_PARALLEL_SCENARIOS 6
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
 
 #define XSTR(x) STR(x)
