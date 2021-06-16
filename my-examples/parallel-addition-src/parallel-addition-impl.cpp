@@ -567,146 +567,145 @@ static void paral_calc_qi_bin(LweSample *qi,
                               const LweSample *w_i1,
                               const TFheGateBootstrappingCloudKeySet *bk)
 {
-    //~ const LweParams *io_lwe_params = bk->params->in_out_params;
+    const LweParams *io_lwe_params = bk->params->in_out_params;
 
-    //~ // progress bar ...
-    //~ printf("-");fflush(stdout);
+    // progress bar ...
+    printf("-");fflush(stdout);
 
-    //~ //  SCENARIO IIb-G
-//~ #if PA_SCENARIO_QUAD == G_PARALLEL_4
-    //~ {
-        //~ // aux variables
-        //~ LweSample *r1 = new_LweSample(io_lwe_params);
-        //~ LweSample *r2 = new_LweSample(io_lwe_params);
-        //~ LweSample *r3 = new_LweSample(io_lwe_params);
-        //~ LweSample *r23= new_LweSample(io_lwe_params);
+    //  SCENARIO IIa-D
+#if PA_SCENARIO_BIN == D_PARALLEL_2
+    {
+        // aux variables
+        LweSample *r1 = new_LweSample(io_lwe_params);
+        LweSample *r2 = new_LweSample(io_lwe_params);
+        LweSample *r3 = new_LweSample(io_lwe_params);
+        LweSample *r23= new_LweSample(io_lwe_params);
 
-        //~ //      r1   =   w_i <=> +-3
-        //~ bs_gleq(r1,      w_i0,     3,   PI_B, bk);
+        //      r1   =   w_i <=> +-2
+        bs_gleq(r1,      w_i0,     2,   PI_B, bk);
 
-        //~ //      r2   =   w_i == +-2
-        //~ bs_eq  (r2,      w_i0,    2,    PI_B, bk);
+        //      r2   =   w_i == +-1
+        bs_eq  (r2,      w_i0,    1,    PI_B, bk);
 
-        //~ if (w_i1 == NULL)
-        //~ {
-            //~ //  zero
-            //~ lweNoiselessTrivial(r3, 0,  io_lwe_params);
-        //~ }
-        //~ else
-        //~ {
-            //~ //      r3   =   w_i-1 <=> +-2
-            //~ bs_gleq(r3,      w_i1,       2,   PI_B, bk);
-        //~ }
+        if (w_i1 == NULL)
+        {
+            //  zero
+            lweNoiselessTrivial(r3, 0,  io_lwe_params);
+        }
+        else
+        {
+            //      r3   =   w_i-1 <=> +-1
+            bs_gleq(r3,      w_i1,       1,   PI_B, bk);
+        }
 
-        //~ //      r23: r2+r3 == +-2
-        //~ lweAddTo(    r2,r3,         io_lwe_params);
-        //~ bs_eq  (r23, r2,        2,  PI_B, bk);
+        //      r23: r2+r3 == +-2
+        lweAddTo(    r2,r3,         io_lwe_params);
+        bs_eq  (r23, r2,        2,  PI_B, bk);
 
-        //~ //      q_i   =   r1 + r23
-        //~ lweCopy (qi,      r1,       io_lwe_params);
-        //~ lweAddTo(qi,           r23, io_lwe_params);
-    //~ }
+        //      q_i   =   r1 + r23
+        lweCopy (qi,      r1,       io_lwe_params);
+        lweAddTo(qi,           r23, io_lwe_params);
+    }
 
-    //~ //  SCENARIO IIb-H
-//~ #elif PA_SCENARIO_QUAD == H_PARALLEL_4
-    //~ {
-        //~ // aux variables
-        //~ LweSample *r1 = new_LweSample(io_lwe_params);
-        //~ LweSample *r2 = new_LweSample(io_lwe_params);
-        //~ LweSample *w_i1__3_r2 = new_LweSample(io_lwe_params);
-        //~ LweSample *r23= new_LweSample(io_lwe_params);
+    //  SCENARIO IIa-E
+#elif PA_SCENARIO_BIN == E_PARALLEL_2
+    {
+        // aux variables
+        LweSample *r1 = new_LweSample(io_lwe_params);
+        LweSample *r2 = new_LweSample(io_lwe_params);
+        LweSample *w_i1__3_r2 = new_LweSample(io_lwe_params);
+        LweSample *r23= new_LweSample(io_lwe_params);
 
-        //~ //      r1   =   w_i <=> +-3
-        //~ bs_gleq(r1,      w_i0,     3,   PI_B, bk);
+        //      r1   =   w_i <=> +-2
+        bs_gleq(r1,      w_i0,     2,   PI_B, bk);
 
-        //~ //      r2   =   w_i == +-2
-        //~ bs_eq  (r2,      w_i0,    2,    PI_B, bk);
+        //      r2   =   w_i == +-1
+        bs_eq  (r2,      w_i0,    1,    PI_B, bk);
 
-        //~ if (w_i1 == NULL)
-        //~ {
-            //~ lweNoiselessTrivial(w_i1__3_r2, 0,  io_lwe_params);             // w_i1__3_r2 = w_i-1
-        //~ }
-        //~ else
-        //~ {
-            //~ lweCopy(w_i1__3_r2, w_i1, io_lwe_params);                       // w_i1__3_r2 = w_i-1
-        //~ }
-        //~ //      r23   =   w_i-1     + 3 r2 <=> +-5
-        //~ lweAddMulTo(      w_i1__3_r2, 3,r2,         io_lwe_params);         // w_i1__3_r2 = w_i-1 + 3 r2
-        //~ bs_gleq(r23,      w_i1__3_r2,            5, PI_B, bk);
+        if (w_i1 == NULL)
+        {
+            lweNoiselessTrivial(w_i1__3_r2, 0,  io_lwe_params);             // w_i1__3_r2 = w_i-1
+        }
+        else
+        {
+            lweCopy(w_i1__3_r2, w_i1, io_lwe_params);                       // w_i1__3_r2 = w_i-1
+        }
+        //      r23   =   w_i-1     + 2 r2 <=> +-3
+        lweAddMulTo(      w_i1__3_r2, 2,r2,         io_lwe_params);         // w_i1__3_r2 = w_i-1 + 3 r2
+        bs_gleq(r23,      w_i1__3_r2,            3, PI_B, bk);
 
-        //~ //      q_i   =   r1 + r23
-        //~ lweCopy (qi,      r1,       io_lwe_params);
-        //~ lweAddTo(qi,           r23, io_lwe_params);
-    //~ }
+        //      q_i   =   r1 + r23
+        lweCopy (qi,      r1,       io_lwe_params);
+        lweAddTo(qi,           r23, io_lwe_params);
+    }
 
-    //~ //  SCENARIO IIb-I
-//~ #elif PA_SCENARIO_QUAD == I_PARALLEL_4
-    //~ {
-        //~ // aux variables
-        //~ LweSample *r1 = new_LweSample(io_lwe_params);
+    //  SCENARIO IIa-F
+#elif PA_SCENARIO_BIN == F_PARALLEL_2
+    {
+        // aux variables
+        LweSample *r1 = new_LweSample(io_lwe_params);
 
-        //~ if (w_i1 == NULL)
-        //~ {
-            //~ lweNoiselessTrivial(r1, 0, io_lwe_params);              // r1 = w_i-1
-        //~ }
-        //~ else
-        //~ {
-            //~ lweCopy(r1, w_i1, io_lwe_params);                       // r1 = w_i-1
-        //~ }
+        if (w_i1 == NULL)
+        {
+            lweNoiselessTrivial(r1, 0, io_lwe_params);              // r1 = w_i-1
+        }
+        else
+        {
+            lweCopy(r1, w_i1, io_lwe_params);                       // r1 = w_i-1
+        }
 
-        //~ //      q_i   =   w_i-1 + 6 w_i <=> +-14
-        //~ lweAddMulTo(      r1,     6,w_i0,           io_lwe_params); // r1 = w_i-1 + 6 w_i
-        //~ bs_gleq(qi,       r1,                 14,   PI_B, bk);
-    //~ }
+        //      q_i   =   w_i-1 + 3 w_i <=> +-4
+        lweAddMulTo(      r1,     3,w_i0,          io_lwe_params); // r1 = w_i-1 + 3 w_i
+        bs_gleq(qi,       r1,                 4,   PI_B, bk);
+    }
 
-//~ #else
-    //~ #pragma message "Invalid parallel addition scenario " XSTR(PA_SCENARIO_QUAD)
-    //~ #error "As stated above."
-//~ #endif
+#else
+    #pragma message "Invalid parallel addition scenario " XSTR(PA_SCENARIO_QUAD)
+    #error "As stated above."
+#endif
 }
 
-//TODO
 static void paral_calc_zi_bin(LweSample *zi,
                               const LweSample *w_i,
                               const LweSample *q_i0,
                               const LweSample *q_i1,
                               const TFheGateBootstrappingCloudKeySet *bk)
 {
-    //~ const LweParams *io_lwe_params = bk->params->in_out_params;
+    const LweParams *io_lwe_params = bk->params->in_out_params;
 
-    //~ // aux variables
-    //~ LweSample *tmpz = new_LweSample(io_lwe_params);
+    // aux variables
+    LweSample *tmpz = new_LweSample(io_lwe_params);
 
-    //~ // setup with w_i (or 0)
-    //~ if (w_i == NULL)
-    //~ {
-        //~ lweNoiselessTrivial(tmpz, 0, io_lwe_params);
-    //~ }
-    //~ else
-    //~ {
-        //~ lweCopy(tmpz, w_i, io_lwe_params);
-    //~ }
+    // setup with w_i (or 0)
+    if (w_i == NULL)
+    {
+        lweNoiselessTrivial(tmpz, 0, io_lwe_params);
+    }
+    else
+    {
+        lweCopy(tmpz, w_i, io_lwe_params);
+    }
 
-    //~ // subtract 4 q_i
-    //~ if (q_i0 != NULL)
-    //~ {
-        //~ lweSubMulTo(tmpz, 4, q_i0, io_lwe_params);
-    //~ }
+    // subtract 2 q_i
+    if (q_i0 != NULL)
+    {
+        lweSubMulTo(tmpz, 2, q_i0, io_lwe_params);
+    }
 
-    //~ // add q_i-1
-    //~ if (q_i1 != NULL)
-    //~ {
-        //~ lweAddTo(tmpz, q_i1, io_lwe_params);
-    //~ }
+    // add q_i-1
+    if (q_i1 != NULL)
+    {
+        lweAddTo(tmpz, q_i1, io_lwe_params);
+    }
 
-    //~ // progress bar ...
-    //~ printf("-");fflush(stdout);
+    // progress bar ...
+    printf("-");fflush(stdout);
 
-    //~ // bootstrap to refresh noise
-    //~ bs_id(zi, tmpz, PI_B, bk);
+    // bootstrap to refresh noise
+    bs_id(zi, tmpz, PI_B, bk);
 
-    //~ // cleanup
-    //~ delete_LweSample(tmpz);
+    // cleanup
+    delete_LweSample(tmpz);
 }
 
 // -----------------------------------------------------------------------------

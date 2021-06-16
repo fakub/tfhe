@@ -28,7 +28,7 @@
 #define SEQ_SCENARIO            B_CARRY_2_BS_BIN
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO_BIN        D_PARALLEL_2
+#define  PA_SCENARIO_BIN        F_PARALLEL_2
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
 #define  PA_SCENARIO_QUAD       H_PARALLEL_4
@@ -36,7 +36,7 @@
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    F_PARALLEL_2
 
-//~ #define DBG_OUT
+#define DBG_OUT
 
 //  ----    do not edit    ----
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario

@@ -17,7 +17,7 @@
 
 //~ #define  SEQ_TEST
 #define  PA_TEST_BIN
-#define  PA_TEST_QUAD
+//~ #define  PA_TEST_QUAD
 #define  BS_TEST
 
 using namespace std;
