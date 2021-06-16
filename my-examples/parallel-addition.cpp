@@ -15,7 +15,7 @@
 
 #include <parallel-addition-impl.h>
 
-#define  SEQ_TEST
+//~ #define  SEQ_TEST
 #define  PA_TEST_BIN
 #define  PA_TEST_QUAD
 #define  BS_TEST
@@ -178,8 +178,8 @@ int32_t main(int32_t argc, char **argv)
 
     // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
     #define PA_BIN_WLEN 20
-    int32_t x_pa_bin_plain[PA_BIN_WLEN] = {0,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,};   // LSB-first
-    int32_t y_pa_bin_plain[PA_BIN_WLEN] = {0,0,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,0,0,1,};
+    int32_t x_pa_bin_plain[PA_BIN_WLEN] = {0, 1,-1, 0, 1,-1, 0,-1,-1,-1, 0, 1, 0, 1, 1, 0,-1, 0, 1,-1, };   // LSB-first
+    int32_t y_pa_bin_plain[PA_BIN_WLEN] = {0, 1, 0, 1, 1, 0, 1,-1,-1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, };
     int32_t z_pa_bin_plain[PA_BIN_WLEN + 1];
 
     int64_t exp_pa_bin_sum = bin_eval(&x_pa_bin_plain[0], PA_BIN_WLEN) + bin_eval(&y_pa_bin_plain[0], PA_BIN_WLEN);
@@ -191,8 +191,8 @@ int32_t main(int32_t argc, char **argv)
     // encrypt
     for (int32_t i = 0; i < PA_BIN_WLEN; i++)
     {
-        paral_sym_encr_bin(x_pa_bin + i, x_pa_bin_plain[i], pa_bin_tfhe_keys);
-        paral_sym_encr_bin(y_pa_bin + i, y_pa_bin_plain[i], pa_bin_tfhe_keys);
+        paral_bin_sym_encr(x_pa_bin + i, x_pa_bin_plain[i], pa_bin_tfhe_keys);
+        paral_bin_sym_encr(y_pa_bin + i, y_pa_bin_plain[i], pa_bin_tfhe_keys);
     }
 
     // print inputs
@@ -214,7 +214,12 @@ int32_t main(int32_t argc, char **argv)
     printf("   ");
 
     // parallel addition
-    parallel_add_quad(z_pa_bin, x_pa_bin, y_pa_bin, PA_BIN_WLEN, &(pa_bin_tfhe_keys->cloud));
+    parallel_add_bin(z_pa_bin, x_pa_bin, y_pa_bin,
+                     PA_BIN_WLEN,
+#ifdef DBG_OUT
+                     pa_bin_tfhe_keys,
+#endif
+                     &(pa_bin_tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= PA_BIN_WLEN; i++)
@@ -274,8 +279,8 @@ int32_t main(int32_t argc, char **argv)
     // encrypt
     for (int32_t i = 0; i < PA_QUAD_WLEN; i++)
     {
-        paral_sym_encr_quad(x_pa_quad + i, x_pa_plain[i], pa_quad_tfhe_keys);
-        paral_sym_encr_quad(y_pa_quad + i, y_pa_plain[i], pa_quad_tfhe_keys);
+        paral_quad_sym_encr(x_pa_quad + i, x_pa_plain[i], pa_quad_tfhe_keys);
+        paral_quad_sym_encr(y_pa_quad + i, y_pa_plain[i], pa_quad_tfhe_keys);
     }
 
     // print inputs
@@ -297,7 +302,12 @@ int32_t main(int32_t argc, char **argv)
     printf("   ");
 
     // parallel addition
-    parallel_add_quad(z_pa_quad, x_pa_quad, y_pa_quad, PA_QUAD_WLEN, &(pa_quad_tfhe_keys->cloud));
+    parallel_add_quad(z_pa_quad, x_pa_quad, y_pa_quad,
+                      PA_QUAD_WLEN,
+#ifdef DBG_OUT
+                      pa_quad_tfhe_keys,
+#endif
+                      &(pa_quad_tfhe_keys->cloud));
 
     // decrypt
     for (int32_t i = 0; i <= PA_QUAD_WLEN; i++)
@@ -332,6 +342,8 @@ int32_t main(int32_t argc, char **argv)
     printf("\n\n================================================================================\n");
     printf("\n    <<<<    Bootstrapping Test    >>>>\n\n");fflush(stdout);
 
+    // setup pi
+    const uint32_t pi = tfhe_params_store[BS_TFHE_PARAMS_INDEX].pi;
     // setup TFHE params
     TFheGateBootstrappingParameterSet *bs_tfhe_params = NULL;
     setup_TFHE_params(BS_TFHE_PARAMS_INDEX, &bs_tfhe_params);
@@ -345,36 +357,39 @@ int32_t main(int32_t argc, char **argv)
     LweSample *gl = new_LweSample(bs_io_lwe_params);
     LweSample *eq = new_LweSample(bs_io_lwe_params);
 
+    //DBG
+    printf("pi = %d\n", pi);
+
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
     printf(" Encr -> Decr    | Id.  | <=> 3 | == 2 | timing (Id.)\n");
     printf("--------------------------------------------------------------------------------\n");
 
-    for (int32_t i = 0; i < (1 << PI_B); i++)
+    for (int32_t i = 0; i < (1 << pi); i++)
     {
         // encrypt
-        sym_encr_priv(a, i - (1 << (PI_B-1)), PI_B, bs_tfhe_keys);
+        sym_encr_priv(a, i - (1 << (pi-1)), pi, bs_tfhe_keys);
 
         // bootstrap
         clock_t begin_id = clock();
-        bs_id(id, a, PI_B, &(bs_tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
+        bs_id(id, a, pi, &(bs_tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, PI_B, 3, &(bs_tfhe_keys->cloud));
+        bs_gleq(gl, a, pi, 3, &(bs_tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        bs_eq(eq, a, PI_B, 2, &(bs_tfhe_keys->cloud));
+        bs_eq(eq, a, pi, 2, &(bs_tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
-        int32_t a_plain     = sym_decr(a,  PI_B, bs_tfhe_keys);
-        int32_t id_plain    = sym_decr(id, PI_B, bs_tfhe_keys);
-        int32_t gl_plain    = sym_decr(gl, PI_B, bs_tfhe_keys);
-        int32_t eq_plain    = sym_decr(eq, PI_B, bs_tfhe_keys);
+        int32_t a_plain     = sym_decr(a,  pi, bs_tfhe_keys);
+        int32_t id_plain    = sym_decr(id, pi, bs_tfhe_keys);
+        int32_t gl_plain    = sym_decr(gl, pi, bs_tfhe_keys);
+        int32_t eq_plain    = sym_decr(eq, pi, bs_tfhe_keys);
 
-        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI_B-1)), a_plain,
+        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (pi-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,
                                                             (end_id - begin_id) / 1000);
     }

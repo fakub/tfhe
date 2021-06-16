@@ -60,6 +60,9 @@ static void paral_calc_zi_quad(LweSample *zi,
                                const LweSample *w_i,
                                const LweSample *q_i0,
                                const LweSample *q_i1,
+#ifdef DBG_OUT
+                               const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                                const TFheGateBootstrappingCloudKeySet *bk);
 
 
@@ -144,10 +147,10 @@ void seq_quad_sym_encr(LweSample *ct,
     if ((message < 0) || (3 < message))
         die_soon("Out of the alphabet A = [0 .. 3].");
 
-    sym_encr_priv(ct, message, PI_Q, sk);
+    sym_encr_priv(ct, message, PI_S, sk);
 }
 
-void paral_sym_encr_quad(LweSample *ct,
+void paral_quad_sym_encr(LweSample *ct,
                          const int32_t message,
                          const TFheGateBootstrappingSecretKeySet *sk)
 {
@@ -157,23 +160,22 @@ void paral_sym_encr_quad(LweSample *ct,
     sym_encr_priv(ct, message, PI_Q, sk);
 }
 
-//TODO probably OK
-void paral_sym_encr_bin(LweSample *ct,
+void paral_bin_sym_encr(LweSample *ct,
                         const int32_t message,
                         const TFheGateBootstrappingSecretKeySet *sk)
 {
-    //~ if ((message < -1) || (1 < message))
-        //~ die_soon("Out of the alphabet A = [-1 .. 1].");
+    if ((message < -1) || (1 < message))
+        die_soon("Out of the alphabet A = [-1 .. 1].");
 
-    //~ sym_encr_priv(ct, message, PI_Q, sk);
+    sym_encr_priv(ct, message, PI_B, sk);
 }
 
-int32_t sym_decr(const LweSample *sample,
+int32_t sym_decr(const LweSample *ct,
                  const uint32_t pi,
                  const TFheGateBootstrappingSecretKeySet *sk)
 {
     Torus32 _1s16 = modSwitchToTorus32(1, 1 << pi);
-    Torus32 mu = lwePhase(sample, sk->lwe_key);
+    Torus32 mu = lwePhase(ct, sk->lwe_key);
     return (mu + (_1s16 >> 1)) >> (32 - pi);
 }
 
@@ -363,24 +365,30 @@ void sequential_add(LweSample *z,
     printf("\n");
 }
 
-//TODO
 // -----------------------------------------------------------------------------
 //  Parallel Addition (Bin)
 //
 void parallel_add_bin(LweSample *z,
                       const LweSample *x,
                       const LweSample *y,
-                      const uint32_t wlen,
+                      const uint32_t wlen_bin,
+#ifdef DBG_OUT
+                      const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                       const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
 
+#ifdef DBG_OUT
+    printf("\n");
+#endif
+
     // alloc aux arrays
-    LweSample *w = new_LweSample_array(wlen, io_lwe_params);
-    LweSample *q = new_LweSample_array(wlen, io_lwe_params);
+    LweSample *w = new_LweSample_array(wlen_bin, io_lwe_params);
+    LweSample *q = new_LweSample_array(wlen_bin, io_lwe_params);
 
     // calc w_i = x_i + y_i
-    for (uint32_t i = 0; i < wlen; i++)
+    for (uint32_t i = 0; i < wlen_bin; i++)
     {
         lweCopy (w + i, x + i, io_lwe_params);
         lweAddTo(w + i, y + i, io_lwe_params);
@@ -390,7 +398,7 @@ void parallel_add_bin(LweSample *z,
     // i = 0
     paral_calc_qi_bin(q, w, NULL, bk);
     // i > 0
-    for (uint32_t i = 1; i < wlen; i++)
+    for (uint32_t i = 1; i < wlen_bin; i++)
     {
         paral_calc_qi_bin(q + i, w + i, w + i - 1, bk);
     }
@@ -399,19 +407,32 @@ void parallel_add_bin(LweSample *z,
     // i = 0
     paral_calc_zi_bin(z, w, q, NULL, bk);
     // i > 0
-    for (uint32_t i = 1; i < wlen; i++)
+    for (uint32_t i = 1; i < wlen_bin; i++)
     {
         paral_calc_zi_bin(z + i, w + i, q + i, q + i - 1, bk);
     }
-    // i = wlen
-    paral_calc_zi_bin(z + wlen, NULL, NULL, q + wlen - 1, bk);
+    // i = wlen_bin
+    paral_calc_zi_bin(z + wlen_bin, NULL, NULL, q + wlen_bin - 1, bk);
+
+#ifdef DBG_OUT
+    for (uint32_t i = 0; i < wlen_bin; i++)
+    {
+        printf("Position #%d\n", i);
+        int32_t x_plain = sym_decr(x + i, PI_B, sk);
+        int32_t y_plain = sym_decr(y + i, PI_B, sk);
+        int32_t z_plain = sym_decr(z + i, PI_B, sk);
+        int32_t w_plain = sym_decr(w + i, PI_B, sk);
+        int32_t q_plain = sym_decr(q + i, PI_B, sk);
+        printf("    x = %d, y = %d, z = %d, w = %d, q = %d\n", x_plain, y_plain, z_plain, w_plain, q_plain);fflush(stdout);
+    }
+#endif
 
     // progress bar end
     printf("\n");
 
     // cleanup
-    delete_LweSample_array(wlen, q);
-    delete_LweSample_array(wlen, w);
+    delete_LweSample_array(wlen_bin, q);
+    delete_LweSample_array(wlen_bin, w);
 }
 
 // -----------------------------------------------------------------------------
@@ -420,17 +441,24 @@ void parallel_add_bin(LweSample *z,
 void parallel_add_quad(LweSample *z,
                        const LweSample *x,
                        const LweSample *y,
-                       const uint32_t wlen,
+                       const uint32_t wlen_quad,
+#ifdef DBG_OUT
+                       const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                        const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
 
+#ifdef DBG_OUT
+    printf("\n");
+#endif
+
     // alloc aux arrays
-    LweSample *w = new_LweSample_array(wlen, io_lwe_params);
-    LweSample *q = new_LweSample_array(wlen, io_lwe_params);
+    LweSample *w = new_LweSample_array(wlen_quad, io_lwe_params);
+    LweSample *q = new_LweSample_array(wlen_quad, io_lwe_params);
 
     // calc w_i = x_i + y_i
-    for (uint32_t i = 0; i < wlen; i++)
+    for (uint32_t i = 0; i < wlen_quad; i++)
     {
         lweCopy (w + i, x + i, io_lwe_params);
         lweAddTo(w + i, y + i, io_lwe_params);
@@ -440,28 +468,53 @@ void parallel_add_quad(LweSample *z,
     // i = 0
     paral_calc_qi_quad(q, w, NULL, bk);
     // i > 0
-    for (uint32_t i = 1; i < wlen; i++)
+    for (uint32_t i = 1; i < wlen_quad; i++)
     {
         paral_calc_qi_quad(q + i, w + i, w + i - 1, bk);
     }
 
     // calc z_i's
     // i = 0
-    paral_calc_zi_quad(z, w, q, NULL, bk);
+    paral_calc_zi_quad(z, w, q, NULL,
+#ifdef DBG_OUT
+                       sk,
+#endif
+                       bk);
     // i > 0
-    for (uint32_t i = 1; i < wlen; i++)
+    for (uint32_t i = 1; i < wlen_quad; i++)
     {
-        paral_calc_zi_quad(z + i, w + i, q + i, q + i - 1, bk);
+        paral_calc_zi_quad(z + i, w + i, q + i, q + i - 1,
+#ifdef DBG_OUT
+                           sk,
+#endif
+                           bk);
     }
-    // i = wlen
-    paral_calc_zi_quad(z + wlen, NULL, NULL, q + wlen - 1, bk);
+    // i = wlen_quad
+    paral_calc_zi_quad(z + wlen_quad, NULL, NULL, q + wlen_quad - 1,
+#ifdef DBG_OUT
+                       sk,
+#endif
+                       bk);
+
+#ifdef DBG_OUT
+    for (uint32_t i = 0; i < wlen_quad; i++)
+    {
+        printf("Position #%d\n", i);
+        int32_t x_plain = sym_decr(x + i, PI_Q, sk);
+        int32_t y_plain = sym_decr(y + i, PI_Q, sk);
+        int32_t z_plain = sym_decr(z + i, PI_Q, sk);
+        int32_t w_plain = sym_decr(w + i, PI_Q, sk);
+        int32_t q_plain = sym_decr(q + i, PI_Q, sk);
+        printf("    x = %d, y = %d, z = %d, w = %d, q = %d\n", x_plain, y_plain, z_plain, w_plain, q_plain);fflush(stdout);
+    }
+#endif
 
     // progress bar end
     printf("\n");
 
     // cleanup
-    delete_LweSample_array(wlen, q);
-    delete_LweSample_array(wlen, w);
+    delete_LweSample_array(wlen_quad, q);
+    delete_LweSample_array(wlen_quad, w);
 }
 
 // -----------------------------------------------------------------------------
@@ -766,6 +819,9 @@ static void paral_calc_zi_quad(LweSample *zi,
                                const LweSample *w_i,
                                const LweSample *q_i0,
                                const LweSample *q_i1,
+#ifdef DBG_OUT
+                               const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                                const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
@@ -783,6 +839,11 @@ static void paral_calc_zi_quad(LweSample *zi,
         lweCopy(tmpz, w_i, io_lwe_params);
     }
 
+#ifdef DBG_OUT
+    int32_t tmpz_plain = sym_decr(tmpz, PI_Q, sk);
+    printf("        w_i = %d\n", tmpz_plain);fflush(stdout);
+#endif
+
     // subtract 4 q_i
     if (q_i0 != NULL)
     {
@@ -795,11 +856,13 @@ static void paral_calc_zi_quad(LweSample *zi,
         lweAddTo(tmpz, q_i1, io_lwe_params);
     }
 
+#ifndef DBG_OUT
     // progress bar ...
     printf("-");fflush(stdout);
+#endif
 
     // bootstrap to refresh noise
-    bs_id(zi, tmpz, PI_B, bk);
+    bs_id(zi, tmpz, PI_Q, bk);
 
     // cleanup
     delete_LweSample(tmpz);

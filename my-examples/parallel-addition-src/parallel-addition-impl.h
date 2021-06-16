@@ -25,23 +25,23 @@
 #define I_PARALLEL_4          9
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO        B_CARRY_2_BS_BIN
+#define SEQ_SCENARIO            B_CARRY_2_BS_BIN
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO_BIN    D_PARALLEL_2
+#define  PA_SCENARIO_BIN        D_PARALLEL_2
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO_QUAD   H_PARALLEL_4
+#define  PA_SCENARIO_QUAD       H_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
-#define BS_TFHE_PARAMS_INDEX    G_PARALLEL_4
+#define BS_TFHE_PARAMS_INDEX    F_PARALLEL_2
 
 //~ #define DBG_OUT
 
 //  ----    do not edit    ----
+#define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
 #define PAB_TFHE_PARAMS_INDEX  PA_SCENARIO_BIN      // by default, use TFHE params derived for particular scenario
 #define PAQ_TFHE_PARAMS_INDEX  PA_SCENARIO_QUAD     // by default, use TFHE params derived for particular scenario
-#define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 6
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
@@ -139,7 +139,7 @@ void seq_quad_sym_encr(LweSample *ct,
  *  @brief          Description
  *
  */
-void paral_sym_encr_quad(LweSample *ct,
+void paral_quad_sym_encr(LweSample *ct,
                          const int32_t message,
                          const TFheGateBootstrappingSecretKeySet *sk);
 
@@ -147,7 +147,7 @@ void paral_sym_encr_quad(LweSample *ct,
  *  @brief          Description
  *
  */
-void paral_sym_encr_bin(LweSample *ct,
+void paral_bin_sym_encr(LweSample *ct,
                         const int32_t message,
                         const TFheGateBootstrappingSecretKeySet *sk);
 
@@ -155,7 +155,7 @@ void paral_sym_encr_bin(LweSample *ct,
  *  @brief          Description
  *
  */
-int32_t sym_decr(const LweSample *sample,
+int32_t sym_decr(const LweSample *ct,
                  const uint32_t pi,
                  const TFheGateBootstrappingSecretKeySet *sk);
 
@@ -215,7 +215,10 @@ void sequential_add(LweSample *z,
 void parallel_add_bin(LweSample *z,
                       const LweSample *x,
                       const LweSample *y,
-                      const uint32_t wlen,
+                      const uint32_t wlen_bin,
+#ifdef DBG_OUT
+                      const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                       const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
@@ -235,7 +238,10 @@ void parallel_add_bin(LweSample *z,
 void parallel_add_quad(LweSample *z,
                        const LweSample *x,
                        const LweSample *y,
-                       const uint32_t wlen,
+                       const uint32_t wlen_quad,
+#ifdef DBG_OUT
+                       const TFheGateBootstrappingSecretKeySet *sk,
+#endif
                        const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
