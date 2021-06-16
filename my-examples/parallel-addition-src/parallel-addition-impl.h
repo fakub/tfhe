@@ -11,6 +11,8 @@
 #include "tlwe.h"
 #include "tgsw.h"
 
+#include <bootstrapping-functions.h>
+
 #define TFHE_LIB              0
 #define A_CARRY_5_BS_BIN      1
 #define B_CARRY_2_BS_BIN      2
@@ -97,54 +99,6 @@ extern const uint32_t PI;
  */
 void setup_TFHE_params(const int tfhe_params_index,
                        TFheGateBootstrappingParameterSet **const tfhe_params);
-
-// -----------------------------------------------------------------------------
-//  LUT Bootstrapping: Identity, Threshold, Equality
-//
-
-/**
- *  @brief          Identity around zero
- *
- */
-void bs_id(LweSample *result,
-           const LweSample *sample,
-           const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Identity at positive half
- *
- */
-void bs_mod(LweSample *result,
-            const LweSample *sample,
-            const uint32_t mod,
-            const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void bs_gleq(LweSample *result,
-             const LweSample *sample,
-             const uint32_t thr,
-             const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void bs_pos_gleq(LweSample *result,
-                 const LweSample *sample,
-                 const uint32_t thr,
-                 const TFheGateBootstrappingCloudKeySet *bk);
-
-/**
- *  @brief          Description
- *
- */
-void bs_eq(LweSample *result,
-           const LweSample *sample,
-           const uint32_t thr,
-           const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
 //  En/Decryption

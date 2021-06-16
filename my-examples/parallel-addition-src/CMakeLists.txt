@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 set(SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/bootstrapping-functions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/parallel-addition-impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/parallel-addition-tfhe-params.cpp
     PARENT_SCOPE
