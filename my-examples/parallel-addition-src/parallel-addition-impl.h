@@ -39,8 +39,9 @@
 //~ #define DBG_OUT
 
 //  ----    do not edit    ----
-#define  PA_TFHE_PARAMS_INDEX  PA_SCENARIO_QUAD   // by default, use TFHE params derived for particular scenario
-#define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO   // by default, use TFHE params derived for particular scenario
+#define PAB_TFHE_PARAMS_INDEX  PA_SCENARIO_BIN      // by default, use TFHE params derived for particular scenario
+#define PAQ_TFHE_PARAMS_INDEX  PA_SCENARIO_QUAD     // by default, use TFHE params derived for particular scenario
+#define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 6
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
@@ -84,7 +85,9 @@ typedef struct tfhe_params_t
  * */
 extern const tfhe_params_t tfhe_params_store[N_PARAM_SETS];
 
-extern const uint32_t PI;
+extern const uint32_t PI_S;
+extern const uint32_t PI_B;
+extern const uint32_t PI_Q;
 
 
 // =============================================================================
@@ -113,6 +116,7 @@ void setup_TFHE_params(const int tfhe_params_index,
  */
 void sym_encr_priv(LweSample *ct,
                    const int32_t message,
+                   const uint32_t pi,
                    const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
@@ -152,6 +156,7 @@ void paral_sym_encr_bin(LweSample *ct,
  *
  */
 int32_t sym_decr(const LweSample *sample,
+                 const uint32_t pi,
                  const TFheGateBootstrappingSecretKeySet *sk);
 
 /**

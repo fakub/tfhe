@@ -23,6 +23,7 @@
  */
 void bs_id(LweSample *result,
            const LweSample *sample,
+           const uint32_t pi,
            const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
@@ -32,6 +33,7 @@ void bs_id(LweSample *result,
 void bs_mod(LweSample *result,
             const LweSample *sample,
             const uint32_t mod,
+            const uint32_t pi,
             const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
@@ -41,6 +43,7 @@ void bs_mod(LweSample *result,
 void bs_gleq(LweSample *result,
              const LweSample *sample,
              const uint32_t thr,
+             const uint32_t pi,
              const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
@@ -50,6 +53,7 @@ void bs_gleq(LweSample *result,
 void bs_pos_gleq(LweSample *result,
                  const LweSample *sample,
                  const uint32_t thr,
+                 const uint32_t pi,
                  const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
@@ -59,6 +63,7 @@ void bs_pos_gleq(LweSample *result,
 void bs_eq(LweSample *result,
            const LweSample *sample,
            const uint32_t thr,
+           const uint32_t pi,
            const TFheGateBootstrappingCloudKeySet *bk);
 
 #endif // #ifndef BS_FUNCTIONS_H

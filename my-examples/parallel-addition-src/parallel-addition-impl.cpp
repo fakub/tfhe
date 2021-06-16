@@ -70,7 +70,9 @@ static void paral_calc_zi_quad(LweSample *zi,
 
 //  ----    TFHE params moved to separate file    ----
 
-extern const uint32_t PI = tfhe_params_store[PA_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_S = tfhe_params_store[SEQ_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_B = tfhe_params_store[PAB_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_Q = tfhe_params_store[PAQ_TFHE_PARAMS_INDEX].pi;
 
 
 // =============================================================================
@@ -113,13 +115,14 @@ void setup_TFHE_params(const int tfhe_params_index,
 //
 void sym_encr_priv(LweSample *ct,
                    const int32_t message,
+                   const uint32_t pi,
                    const TFheGateBootstrappingSecretKeySet *sk)
 {
-    Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
+    Torus32 _1s16 = modSwitchToTorus32(1, 1 << pi);
 
     // scale to [-8/16, 7/16]
     //                         ___/ 8 \___     _/ mask 1111 \_     ___/ 8 \___
-    Torus32 mu = (((message + (1 << (PI-1))) & ((1 << PI) - 1)) - (1 << (PI-1))) * _1s16;
+    Torus32 mu = (((message + (1 << (pi-1))) & ((1 << pi) - 1)) - (1 << (pi-1))) * _1s16;
     double alpha = sk->params->in_out_params->alpha_min;
     lweSymEncrypt(ct, mu, alpha, sk->lwe_key);
 }
@@ -141,7 +144,7 @@ void seq_quad_sym_encr(LweSample *ct,
     if ((message < 0) || (3 < message))
         die_soon("Out of the alphabet A = [0 .. 3].");
 
-    sym_encr_priv(ct, message, sk);
+    sym_encr_priv(ct, message, PI_Q, sk);
 }
 
 void paral_sym_encr_quad(LweSample *ct,
@@ -151,7 +154,7 @@ void paral_sym_encr_quad(LweSample *ct,
     if ((message < -2) || (2 < message))
         die_soon("Out of the alphabet A = [-2 .. 2].");
 
-    sym_encr_priv(ct, message, sk);
+    sym_encr_priv(ct, message, PI_Q, sk);
 }
 
 //TODO probably OK
@@ -162,15 +165,16 @@ void paral_sym_encr_bin(LweSample *ct,
     //~ if ((message < -1) || (1 < message))
         //~ die_soon("Out of the alphabet A = [-1 .. 1].");
 
-    //~ sym_encr_priv(ct, message, sk);
+    //~ sym_encr_priv(ct, message, PI_Q, sk);
 }
 
 int32_t sym_decr(const LweSample *sample,
+                 const uint32_t pi,
                  const TFheGateBootstrappingSecretKeySet *sk)
 {
-    Torus32 _1s16 = modSwitchToTorus32(1, 1 << PI);
+    Torus32 _1s16 = modSwitchToTorus32(1, 1 << pi);
     Torus32 mu = lwePhase(sample, sk->lwe_key);
-    return (mu + (_1s16 >> 1)) >> (32 - PI);
+    return (mu + (_1s16 >> 1)) >> (32 - pi);
 }
 
 int32_t bin_sym_decr(const LweSample *ct,
@@ -324,17 +328,17 @@ void sequential_add(LweSample *z,
         // w += c
         lweAddTo(w,     c, io_lwe_params);
         // z_i = w % 4
-        bs_mod(z + i, w, 4, bk);
+        bs_mod(z + i, w, 4, PI_S, bk);
 
         // c = (w >= 4)
-        bs_pos_gleq(c, w, 4, bk);
+        bs_pos_gleq(c, w, 4, PI_S, bk);
 
 #ifdef DBG_OUT
         printf("Position #%d\n", i);
-        int32_t x_plain = sym_decr(x + i, sk);
-        int32_t y_plain = sym_decr(y + i, sk);
-        int32_t c_plain = sym_decr(c,     sk);
-        int32_t z_plain = sym_decr(z + i, sk);
+        int32_t x_plain = sym_decr(x + i, PI_S, sk);
+        int32_t y_plain = sym_decr(y + i, PI_S, sk);
+        int32_t c_plain = sym_decr(c,     PI_S, sk);
+        int32_t z_plain = sym_decr(z + i, PI_S, sk);
         printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
 #endif
     }
@@ -525,10 +529,10 @@ static void paral_calc_qi_bin(LweSample *qi,
         //~ LweSample *r23= new_LweSample(io_lwe_params);
 
         //~ //      r1   =   w_i <=> +-3
-        //~ bs_gleq(r1,      w_i0,     3,   bk);
+        //~ bs_gleq(r1,      w_i0,     3,   PI_B, bk);
 
         //~ //      r2   =   w_i == +-2
-        //~ bs_eq  (r2,      w_i0,    2,    bk);
+        //~ bs_eq  (r2,      w_i0,    2,    PI_B, bk);
 
         //~ if (w_i1 == NULL)
         //~ {
@@ -538,12 +542,12 @@ static void paral_calc_qi_bin(LweSample *qi,
         //~ else
         //~ {
             //~ //      r3   =   w_i-1 <=> +-2
-            //~ bs_gleq(r3,      w_i1,       2,   bk);
+            //~ bs_gleq(r3,      w_i1,       2,   PI_B, bk);
         //~ }
 
         //~ //      r23: r2+r3 == +-2
         //~ lweAddTo(    r2,r3,         io_lwe_params);
-        //~ bs_eq  (r23, r2,        2,  bk);
+        //~ bs_eq  (r23, r2,        2,  PI_B, bk);
 
         //~ //      q_i   =   r1 + r23
         //~ lweCopy (qi,      r1,       io_lwe_params);
@@ -560,10 +564,10 @@ static void paral_calc_qi_bin(LweSample *qi,
         //~ LweSample *r23= new_LweSample(io_lwe_params);
 
         //~ //      r1   =   w_i <=> +-3
-        //~ bs_gleq(r1,      w_i0,     3,   bk);
+        //~ bs_gleq(r1,      w_i0,     3,   PI_B, bk);
 
         //~ //      r2   =   w_i == +-2
-        //~ bs_eq  (r2,      w_i0,    2,    bk);
+        //~ bs_eq  (r2,      w_i0,    2,    PI_B, bk);
 
         //~ if (w_i1 == NULL)
         //~ {
@@ -575,7 +579,7 @@ static void paral_calc_qi_bin(LweSample *qi,
         //~ }
         //~ //      r23   =   w_i-1     + 3 r2 <=> +-5
         //~ lweAddMulTo(      w_i1__3_r2, 3,r2,         io_lwe_params);         // w_i1__3_r2 = w_i-1 + 3 r2
-        //~ bs_gleq(r23,      w_i1__3_r2,            5, bk);
+        //~ bs_gleq(r23,      w_i1__3_r2,            5, PI_B, bk);
 
         //~ //      q_i   =   r1 + r23
         //~ lweCopy (qi,      r1,       io_lwe_params);
@@ -599,7 +603,7 @@ static void paral_calc_qi_bin(LweSample *qi,
 
         //~ //      q_i   =   w_i-1 + 6 w_i <=> +-14
         //~ lweAddMulTo(      r1,     6,w_i0,           io_lwe_params); // r1 = w_i-1 + 6 w_i
-        //~ bs_gleq(qi,       r1,                 14,   bk);
+        //~ bs_gleq(qi,       r1,                 14,   PI_B, bk);
     //~ }
 
 //~ #else
@@ -646,7 +650,7 @@ static void paral_calc_zi_bin(LweSample *zi,
     //~ printf("-");fflush(stdout);
 
     //~ // bootstrap to refresh noise
-    //~ bs_id(zi, tmpz, bk);
+    //~ bs_id(zi, tmpz, PI_B, bk);
 
     //~ // cleanup
     //~ delete_LweSample(tmpz);
@@ -675,10 +679,10 @@ static void paral_calc_qi_quad(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-3
-        bs_gleq(r1,      w_i0,     3,   bk);
+        bs_gleq(r1,      w_i0,     3,   PI_Q, bk);
 
         //      r2   =   w_i == +-2
-        bs_eq  (r2,      w_i0,    2,    bk);
+        bs_eq  (r2,      w_i0,    2,    PI_Q, bk);
 
         if (w_i1 == NULL)
         {
@@ -688,12 +692,12 @@ static void paral_calc_qi_quad(LweSample *qi,
         else
         {
             //      r3   =   w_i-1 <=> +-2
-            bs_gleq(r3,      w_i1,       2,   bk);
+            bs_gleq(r3,      w_i1,       2,   PI_Q, bk);
         }
 
         //      r23: r2+r3 == +-2
         lweAddTo(    r2,r3,         io_lwe_params);
-        bs_eq  (r23, r2,        2,  bk);
+        bs_eq  (r23, r2,        2,  PI_Q, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -710,10 +714,10 @@ static void paral_calc_qi_quad(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-3
-        bs_gleq(r1,      w_i0,     3,   bk);
+        bs_gleq(r1,      w_i0,     3,   PI_Q, bk);
 
         //      r2   =   w_i == +-2
-        bs_eq  (r2,      w_i0,    2,    bk);
+        bs_eq  (r2,      w_i0,    2,    PI_Q, bk);
 
         if (w_i1 == NULL)
         {
@@ -725,7 +729,7 @@ static void paral_calc_qi_quad(LweSample *qi,
         }
         //      r23   =   w_i-1     + 3 r2 <=> +-5
         lweAddMulTo(      w_i1__3_r2, 3,r2,         io_lwe_params);         // w_i1__3_r2 = w_i-1 + 3 r2
-        bs_gleq(r23,      w_i1__3_r2,            5, bk);
+        bs_gleq(r23,      w_i1__3_r2,            5, PI_Q, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -749,7 +753,7 @@ static void paral_calc_qi_quad(LweSample *qi,
 
         //      q_i   =   w_i-1 + 6 w_i <=> +-14
         lweAddMulTo(      r1,     6,w_i0,           io_lwe_params); // r1 = w_i-1 + 6 w_i
-        bs_gleq(qi,       r1,                 14,   bk);
+        bs_gleq(qi,       r1,                 14,   PI_Q, bk);
     }
 
 #else
@@ -795,7 +799,7 @@ static void paral_calc_zi_quad(LweSample *zi,
     printf("-");fflush(stdout);
 
     // bootstrap to refresh noise
-    bs_id(zi, tmpz, bk);
+    bs_id(zi, tmpz, PI_B, bk);
 
     // cleanup
     delete_LweSample(tmpz);

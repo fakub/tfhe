@@ -132,7 +132,7 @@ int32_t main(int32_t argc, char **argv)
     // decrypt
     for (int32_t i = 0; i <= SEQ_WLEN; i++)
 #if (SEQ_SCENARIO == C_CARRY_2_BIT)
-        z_seq_plain[i] = sym_decr(z_seq + i, seq_tfhe_keys);
+        z_seq_plain[i] = sym_decr(z_seq + i, PI_S, seq_tfhe_keys);
 #else
         z_seq_plain[i] = bin_sym_decr(z_seq + i, seq_tfhe_keys);
 #endif
@@ -163,15 +163,15 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Parallel Addition Test
     //
-    if (PA_SCENARIO_BIN != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    if (PA_SCENARIO_BIN != PAB_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with binary parallel addition scenario!\n");
     printf("\n\n================================================================================\n");
-    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
-    printf("Scenario: %c\n", 'A' + PA_SCENARIO_QUAD - 1);
-    printf("Params:   %c\n\n", 'A' + PA_TFHE_PARAMS_INDEX - 1);fflush(stdout);
+    printf("\n    <<<<    Parallel Addition Test -- Binary    >>>>\n\n");
+    printf("Scenario: %c\n", 'A' + PA_SCENARIO_BIN - 1);
+    printf("Params:   %c\n\n", 'A' + PAB_TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
     // setup TFHE params
     TFheGateBootstrappingParameterSet *pa_bin_tfhe_params = NULL;
-    setup_TFHE_params(PA_TFHE_PARAMS_INDEX, &pa_bin_tfhe_params);
+    setup_TFHE_params(PAB_TFHE_PARAMS_INDEX, &pa_bin_tfhe_params);
     const LweParams *pa_bin_io_lwe_params = pa_bin_tfhe_params->in_out_params;
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *pa_bin_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_bin_tfhe_params);
@@ -218,7 +218,7 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= PA_BIN_WLEN; i++)
-        z_pa_bin_plain[i] = sym_decr(z_pa_bin + i, pa_bin_tfhe_keys);
+        z_pa_bin_plain[i] = sym_decr(z_pa_bin + i, PI_B, pa_bin_tfhe_keys);
 
     // print results
     // z
@@ -246,15 +246,15 @@ int32_t main(int32_t argc, char **argv)
     //
     //  Parallel Addition Test
     //
-    if (PA_SCENARIO_QUAD != PA_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with parallel addition scenario!\n");
+    if (PA_SCENARIO_QUAD != PAQ_TFHE_PARAMS_INDEX) fprintf(stderr, "(w) TFHE parameters do not correspond with quad parallel addition scenario!\n");
     printf("\n\n================================================================================\n");
-    printf("\n    <<<<    Parallel Addition Test    >>>>\n\n");
+    printf("\n    <<<<    Parallel Addition Test -- Quad    >>>>\n\n");
     printf("Scenario: %c\n", 'A' + PA_SCENARIO_QUAD - 1);
-    printf("Params:   %c\n\n", 'A' + PA_TFHE_PARAMS_INDEX - 1);fflush(stdout);
+    printf("Params:   %c\n\n", 'A' + PAQ_TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
     // setup TFHE params
     TFheGateBootstrappingParameterSet *pa_quad_tfhe_params = NULL;
-    setup_TFHE_params(PA_TFHE_PARAMS_INDEX, &pa_quad_tfhe_params);
+    setup_TFHE_params(PAQ_TFHE_PARAMS_INDEX, &pa_quad_tfhe_params);
     const LweParams *pa_quad_io_lwe_params = pa_quad_tfhe_params->in_out_params;
     // generate TFHE secret keys
     TFheGateBootstrappingSecretKeySet *pa_quad_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(pa_quad_tfhe_params);
@@ -301,7 +301,7 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= PA_QUAD_WLEN; i++)
-        z_pa_plain[i] = sym_decr(z_pa_quad + i, pa_quad_tfhe_keys);
+        z_pa_plain[i] = sym_decr(z_pa_quad + i, PI_Q, pa_quad_tfhe_keys);
 
     // print results
     // z
@@ -350,31 +350,31 @@ int32_t main(int32_t argc, char **argv)
     printf(" Encr -> Decr    | Id.  | <=> 3 | == 2 | timing (Id.)\n");
     printf("--------------------------------------------------------------------------------\n");
 
-    for (int32_t i = 0; i < (1 << PI); i++)
+    for (int32_t i = 0; i < (1 << PI_B); i++)
     {
         // encrypt
-        sym_encr_priv(a, i - (1 << (PI-1)), bs_tfhe_keys);
+        sym_encr_priv(a, i - (1 << (PI_B-1)), PI_B, bs_tfhe_keys);
 
         // bootstrap
         clock_t begin_id = clock();
-        bs_id(id, a, &(bs_tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
+        bs_id(id, a, PI_B, &(bs_tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, 3, &(bs_tfhe_keys->cloud));
+        bs_gleq(gl, a, PI_B, 3, &(bs_tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        bs_eq(eq, a, 2, &(bs_tfhe_keys->cloud));
+        bs_eq(eq, a, PI_B, 2, &(bs_tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
-        int32_t a_plain     = sym_decr(a,  bs_tfhe_keys);
-        int32_t id_plain    = sym_decr(id, bs_tfhe_keys);
-        int32_t gl_plain    = sym_decr(gl, bs_tfhe_keys);
-        int32_t eq_plain    = sym_decr(eq, bs_tfhe_keys);
+        int32_t a_plain     = sym_decr(a,  PI_B, bs_tfhe_keys);
+        int32_t id_plain    = sym_decr(id, PI_B, bs_tfhe_keys);
+        int32_t gl_plain    = sym_decr(gl, PI_B, bs_tfhe_keys);
+        int32_t eq_plain    = sym_decr(eq, PI_B, bs_tfhe_keys);
 
-        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI-1)), a_plain,
+        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (PI_B-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,
                                                             (end_id - begin_id) / 1000);
     }
