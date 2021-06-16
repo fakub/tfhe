@@ -561,7 +561,6 @@ int64_t bin_eval(const int32_t *const x,
 // -----------------------------------------------------------------------------
 //  Bin
 //
-//TODO
 static void paral_calc_qi_bin(LweSample *qi,
                               const LweSample *w_i0,
                               const LweSample *w_i1,

@@ -18,7 +18,7 @@
 //~ #define  SEQ_TEST
 #define  PA_TEST_BIN
 //~ #define  PA_TEST_QUAD
-#define  BS_TEST
+//~ #define  BS_TEST
 
 using namespace std;
 
@@ -158,7 +158,7 @@ int32_t main(int32_t argc, char **argv)
 #endif
 
 
-#ifdef PA_TEST_BIN   //TODO
+#ifdef PA_TEST_BIN
     // -------------------------------------------------------------------------
     //
     //  Parallel Addition Test
@@ -341,6 +341,7 @@ int32_t main(int32_t argc, char **argv)
     //
     printf("\n\n================================================================================\n");
     printf("\n    <<<<    Bootstrapping Test    >>>>\n\n");fflush(stdout);
+    printf("Params:   %c\n\n", 'A' + BS_TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
     // setup pi
     const uint32_t pi = tfhe_params_store[BS_TFHE_PARAMS_INDEX].pi;
@@ -357,9 +358,6 @@ int32_t main(int32_t argc, char **argv)
     LweSample *gl = new_LweSample(bs_io_lwe_params);
     LweSample *eq = new_LweSample(bs_io_lwe_params);
 
-    //DBG
-    printf("pi = %d\n", pi);
-
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
     printf(" Encr -> Decr    | Id.  | <=> 3 | == 2 | timing (Id.)\n");
@@ -370,17 +368,17 @@ int32_t main(int32_t argc, char **argv)
         // encrypt
         sym_encr_priv(a, i - (1 << (pi-1)), pi, bs_tfhe_keys);
 
-        // bootstrap
+        // bootstraps ...
         clock_t begin_id = clock();
         bs_id(id, a, pi, &(bs_tfhe_keys->cloud)); //FUCKUP #01: member 'cloud' is a struct, but not a pointer (unlike others)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, pi, 3, &(bs_tfhe_keys->cloud));
+        bs_gleq(gl, a, 3, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        bs_eq(eq, a, pi, 2, &(bs_tfhe_keys->cloud));
+        bs_eq(eq, a, 2, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
