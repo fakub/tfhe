@@ -18,7 +18,7 @@
 //~ #define  SEQ_TEST
 #define  PA_TEST_BIN
 //~ #define  PA_TEST_QUAD
-//~ #define  BS_TEST
+#define  BS_TEST
 
 using namespace std;
 
@@ -343,6 +343,9 @@ int32_t main(int32_t argc, char **argv)
     printf("\n    <<<<    Bootstrapping Test    >>>>\n\n");fflush(stdout);
     printf("Params:   %c\n\n", 'A' + BS_TFHE_PARAMS_INDEX - 1);fflush(stdout);
 
+    #define BS_THR 2
+    #define BS_EQQ 2
+
     // setup pi
     const uint32_t pi = tfhe_params_store[BS_TFHE_PARAMS_INDEX].pi;
     // setup TFHE params
@@ -360,7 +363,7 @@ int32_t main(int32_t argc, char **argv)
 
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
-    printf(" Encr -> Decr    | Id.  | <=> 3 | == 2 | timing (Id.)\n");
+    printf(" Encr -> Decr    | Id.  | <=> %2d | == %2d | timing (Id.)\n", BS_THR, BS_EQQ);
     printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < (1 << pi); i++)
@@ -374,11 +377,11 @@ int32_t main(int32_t argc, char **argv)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, 3, pi, &(bs_tfhe_keys->cloud));
+        bs_gleq(gl, a, BS_THR, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();
-        bs_eq(eq, a, 2, pi, &(bs_tfhe_keys->cloud));
+        bs_eq(eq, a, BS_EQQ, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
         // decrypt
@@ -387,7 +390,7 @@ int32_t main(int32_t argc, char **argv)
         int32_t gl_plain    = sym_decr(gl, pi, bs_tfhe_keys);
         int32_t eq_plain    = sym_decr(eq, pi, bs_tfhe_keys);
 
-        printf(" D[E(%+3d)] = %+3d |  %+3d |   %+d  |  %+d  | %lu ms\n", i - (1 << (pi-1)), a_plain,
+        printf(" D[E(%+3d)] = %+3d |  %+3d |    %+d  |   %+d  | %lu ms\n", i - (1 << (pi-1)), a_plain,
                                     id_plain, gl_plain, eq_plain,
                                                             (end_id - begin_id) / 1000);
     }

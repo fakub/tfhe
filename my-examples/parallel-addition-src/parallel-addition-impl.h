@@ -17,26 +17,28 @@
 #define A_CARRY_5_BS_BIN      1
 #define B_CARRY_2_BS_BIN      2
 #define C_CARRY_2_BIT         3
-#define D_PARALLEL_2          4     // D_PARALLEL_SC_1
-#define E_PARALLEL_2          5     // E_PARALLEL_SC_2
-#define F_PARALLEL_2          6     // F_PARALLEL_SC_3
+// ---------------------------------
+#define D_PARALLEL_2          4
+#define E_PARALLEL_2          5
+#define F_PARALLEL_2          6
+// ---------------------------------
 #define G_PARALLEL_4          7
 #define H_PARALLEL_4          8
 #define I_PARALLEL_4          9
 
 // choose sequential addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define SEQ_SCENARIO            B_CARRY_2_BS_BIN
+#define SEQ_SCENARIO            C_CARRY_2_BIT
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
 #define  PA_SCENARIO_BIN        F_PARALLEL_2
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO_QUAD       H_PARALLEL_4
+#define  PA_SCENARIO_QUAD       I_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
 #define BS_TFHE_PARAMS_INDEX    F_PARALLEL_2
 
-#define DBG_OUT
+//~ #define DBG_OUT
 
 //  ----    do not edit    ----
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario

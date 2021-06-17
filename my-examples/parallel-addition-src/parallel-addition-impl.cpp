@@ -60,9 +60,6 @@ static void paral_calc_zi_quad(LweSample *zi,
                                const LweSample *w_i,
                                const LweSample *q_i0,
                                const LweSample *q_i1,
-#ifdef DBG_OUT
-                               const TFheGateBootstrappingSecretKeySet *sk,
-#endif
                                const TFheGateBootstrappingCloudKeySet *bk);
 
 
@@ -358,9 +355,6 @@ void sequential_add(LweSample *z,
     #error "As stated above."
 #endif
 
-    //~ lweCopy (w + i, x + i, io_lwe_params);
-    //~ lweAddTo(w + i, y + i, io_lwe_params);
-
     // progress bar end
     printf("\n");
 }
@@ -475,26 +469,14 @@ void parallel_add_quad(LweSample *z,
 
     // calc z_i's
     // i = 0
-    paral_calc_zi_quad(z, w, q, NULL,
-#ifdef DBG_OUT
-                       sk,
-#endif
-                       bk);
+    paral_calc_zi_quad(z, w, q, NULL, bk);
     // i > 0
     for (uint32_t i = 1; i < wlen_quad; i++)
     {
-        paral_calc_zi_quad(z + i, w + i, q + i, q + i - 1,
-#ifdef DBG_OUT
-                           sk,
-#endif
-                           bk);
+        paral_calc_zi_quad(z + i, w + i, q + i, q + i - 1, bk);
     }
     // i = wlen_quad
-    paral_calc_zi_quad(z + wlen_quad, NULL, NULL, q + wlen_quad - 1,
-#ifdef DBG_OUT
-                       sk,
-#endif
-                       bk);
+    paral_calc_zi_quad(z + wlen_quad, NULL, NULL, q + wlen_quad - 1, bk);
 
 #ifdef DBG_OUT
     for (uint32_t i = 0; i < wlen_quad; i++)
@@ -817,9 +799,6 @@ static void paral_calc_zi_quad(LweSample *zi,
                                const LweSample *w_i,
                                const LweSample *q_i0,
                                const LweSample *q_i1,
-#ifdef DBG_OUT
-                               const TFheGateBootstrappingSecretKeySet *sk,
-#endif
                                const TFheGateBootstrappingCloudKeySet *bk)
 {
     const LweParams *io_lwe_params = bk->params->in_out_params;
@@ -836,11 +815,6 @@ static void paral_calc_zi_quad(LweSample *zi,
     {
         lweCopy(tmpz, w_i, io_lwe_params);
     }
-
-#ifdef DBG_OUT
-    int32_t tmpz_plain = sym_decr(tmpz, PI_Q, sk);
-    printf("        w_i = %d\n", tmpz_plain);fflush(stdout);
-#endif
 
     // subtract 4 q_i
     if (q_i0 != NULL)
