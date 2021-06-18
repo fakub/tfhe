@@ -500,6 +500,90 @@ void parallel_add_quad(LweSample *z,
 }
 
 // -----------------------------------------------------------------------------
+//  Parallel Signum
+//
+void parallel_sgn(LweSample *sgn,
+                  const LweSample *x,
+                  const uint32_t wlen_sgn,
+#ifdef DBG_OUT
+                  const TFheGateBootstrappingSecretKeySet *sk,
+#endif
+                  const TFheGateBootstrappingCloudKeySet *bk)
+{
+    const LweParams *io_lwe_params = bk->params->in_out_params;
+
+#ifdef DBG_OUT
+    printf("\n");
+#endif
+
+    if (wlen_sgn == 1)
+    {
+        // bootstrap one more time (this is actually signum) & return
+        bs_gleq(sgn, x, 1, PI_Q, bk);
+
+#ifdef DBG_OUT
+        printf("Last step\n");
+        int32_t  s_plain = sym_decr(sgn, PI_Q, sk);
+        printf("    sgn = %d\n", s_plain);fflush(stdout);
+#endif
+
+        return;
+    }
+
+    // calc new length (ceiled half)
+    const uint32_t new_wlen = (wlen_sgn+1) / 2;
+
+#ifdef DBG_OUT
+        printf("Size = %d\n", wlen_sgn);
+#endif
+
+    // alloc aux variables / arrays
+    LweSample *b   = new_LweSample_array(new_wlen, io_lwe_params);
+    LweSample *r0  = new_LweSample(io_lwe_params);
+    LweSample *r1  = new_LweSample(io_lwe_params);
+    LweSample *r01 = new_LweSample(io_lwe_params);
+
+    for (uint32_t i = 0; i < new_wlen; i++)
+    {
+        //      r_0  = 2 (x_2i       <=> +-1)
+        bs_gleq(r0,       x + 2*i,         1,   PI_Q, bk);   //TODO FIXME multiply by 2
+        //      r_1  =    x_2i+1     <=> +-1
+        bs_gleq(r1,       x + 2*i+1,       1,   PI_Q, bk);   //FIXME can be out of range
+        //      r_01 =    r_0 + r_1  ==  +-2
+        lweAddTo(         r0,   r1,             io_lwe_params);
+        bs_eq(  r01,      r0,              2,   PI_Q, bk);
+        //      b_i  =    r_1 + r_01
+        lweCopy(b + i,    r1,                   io_lwe_params);
+        lweAddTo(b+ i,          r01,            io_lwe_params);
+
+#ifdef DBG_OUT
+        printf("    Position #%d\n", i);
+        int32_t  r0_plain = sym_decr(r0,    PI_Q, sk);
+        int32_t  r1_plain = sym_decr(r1,    PI_Q, sk);
+        int32_t r01_plain = sym_decr(r01,   PI_Q, sk);
+        int32_t  bi_plain = sym_decr(b + i, PI_Q, sk);
+        printf("        r_0 = %d, r_1 = %d, r_01 = %d, b_i = %d\n", r0_plain, r1_plain, r01_plain, bi_plain);fflush(stdout);
+#endif
+
+        // progress bar end
+        printf("\n");
+    }
+
+    // call recurently
+    parallel_sgn(sgn, b, new_wlen,
+#ifdef DBG_OUT
+                 sk,
+#endif
+                 bk);
+
+    // cleanup
+    delete_LweSample_array(new_wlen, b);
+    delete_LweSample(r0 );
+    delete_LweSample(r1 );
+    delete_LweSample(r01);
+}
+
+// -----------------------------------------------------------------------------
 //  Misc
 //
 void die_soon(const char* message)

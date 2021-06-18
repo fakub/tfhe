@@ -16,8 +16,9 @@
 #include <parallel-addition-impl.h>
 
 //~ #define  SEQ_TEST
-#define  PA_TEST_BIN
+//~ #define  PA_TEST_BIN
 //~ #define  PA_TEST_QUAD
+#define SGN_TEST
 #define  BS_TEST
 
 using namespace std;
@@ -334,6 +335,81 @@ int32_t main(int32_t argc, char **argv)
 #endif
 
 
+#ifdef SGN_TEST
+    // -------------------------------------------------------------------------
+    //
+    //  Signum Test
+    //
+    printf("\n\n================================================================================\n");
+    printf("\n    <<<<    Signum Test    >>>>\n\n");
+    printf("Params:   %c\n\n", 'A' + SGN_TFHE_PARAMS_INDEX - 1);fflush(stdout);
+
+    // setup TFHE params
+    TFheGateBootstrappingParameterSet *sgn_tfhe_params = NULL;
+    setup_TFHE_params(SGN_TFHE_PARAMS_INDEX, &sgn_tfhe_params);
+    const LweParams *sgn_io_lwe_params = sgn_tfhe_params->in_out_params;
+    // generate TFHE secret keys
+    TFheGateBootstrappingSecretKeySet *sgn_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(sgn_tfhe_params);
+
+    // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
+    #define SGN_WLEN 10
+    int32_t x_sgn_plain[SGN_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
+    //~ int32_t y_sgn_plain[SGN_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
+    int32_t sgn_plain = 0;
+
+    //~ int64_t exp_sgn = sgn_eval(&x_sgn_plain[0], SGN_WLEN);
+
+    LweSample *x_sgn = new_LweSample_array(SGN_WLEN,     sgn_io_lwe_params);
+    LweSample *sgn   = new_LweSample(sgn_io_lwe_params);
+
+    // encrypt
+    for (int32_t i = 0; i < SGN_WLEN; i++)
+    {
+        paral_quad_sym_encr(x_sgn + i, x_sgn_plain[i], sgn_tfhe_keys);
+    }
+
+    // print inputs
+    for (int32_t i = 0; i < SGN_WLEN+1; i++) printf("-----");
+    printf("\n");
+
+    // x
+    printf(" X  ");
+    for (int32_t i = SGN_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_sgn_plain[i]);
+    printf("|\n");
+    //~ printf("| %+9ld\n", sgn_eval(&x_sgn_plain[0], SGN_WLEN));
+    for (int32_t i = 0; i < SGN_WLEN+1; i++) printf("-----");
+    printf("   ");
+
+    // signum via parallel reduction
+    parallel_sgn(sgn, x_sgn,
+                      SGN_WLEN,
+#ifdef DBG_OUT
+                      sgn_tfhe_keys,
+#endif
+                      &(sgn_tfhe_keys->cloud));
+
+    // decrypt
+    sgn_plain = sym_decr(sgn, PI_Q, sgn_tfhe_keys);
+
+    // print results
+    // s
+    printf(" S  ");
+    printf("| %+d ", sgn_plain);
+    printf("\n");
+    //~ printf("| %+9ld   %s (exp. %+9ld)\n",
+                            //~ sgn_plain,
+                            //~ exp_sgn == sgn_plain ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            //~ exp_sgn);
+    for (int32_t i = 0; i < SGN_WLEN+2; i++) printf("-----");
+    printf("\n");
+
+    // cleanup
+    delete_LweSample_array(SGN_WLEN,     x_sgn);
+    delete_LweSample(sgn);
+#endif
+
+
 #ifdef BS_TEST
     // -------------------------------------------------------------------------
     //
@@ -420,6 +496,10 @@ int32_t main(int32_t argc, char **argv)
 #ifdef  PA_TEST_QUAD
     delete_gate_bootstrapping_secret_keyset( pa_quad_tfhe_keys);
     delete_gate_bootstrapping_parameters(    pa_quad_tfhe_params);
+#endif
+#ifdef  SGN_TEST
+    delete_gate_bootstrapping_secret_keyset( sgn_tfhe_keys);
+    delete_gate_bootstrapping_parameters(    sgn_tfhe_params);
 #endif
 #ifdef  BS_TEST
     delete_gate_bootstrapping_secret_keyset( bs_tfhe_keys);

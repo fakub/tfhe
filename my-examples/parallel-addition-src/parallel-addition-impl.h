@@ -35,10 +35,13 @@
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
 #define  PA_SCENARIO_QUAD       I_PARALLEL_4
 
-// choose TFHE parameters for bootstrapping tests
-#define BS_TFHE_PARAMS_INDEX    F_PARALLEL_2
+// choose TFHE parameters for signum test
+#define SGN_TFHE_PARAMS_INDEX   G_PARALLEL_4
 
-//~ #define DBG_OUT
+// choose TFHE parameters for bootstrapping tests
+#define  BS_TFHE_PARAMS_INDEX   F_PARALLEL_2
+
+#define DBG_OUT
 
 //  ----    do not edit    ----
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
@@ -245,6 +248,27 @@ void parallel_add_quad(LweSample *z,
                        const TFheGateBootstrappingSecretKeySet *sk,
 #endif
                        const TFheGateBootstrappingCloudKeySet *bk);
+
+// -----------------------------------------------------------------------------
+//  Parallel Signum
+//
+
+/**
+ *  @brief          Main Parallel Signum Function
+ *
+ *  @param[out]     LWE Sample
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      Length of LWE samples
+ *  @param[in]      Bootstrapping Keys
+ *
+ */
+void parallel_sgn(LweSample *sgn,
+                  const LweSample *x,
+                  const uint32_t wlen_sgn,
+#ifdef DBG_OUT
+                  const TFheGateBootstrappingSecretKeySet *sk,
+#endif
+                  const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
 //  Misc
