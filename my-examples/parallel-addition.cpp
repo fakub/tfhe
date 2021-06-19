@@ -17,7 +17,7 @@
 
 //~ #define  SEQ_TEST
 //~ #define  PA_TEST_BIN
-//~ #define  PA_TEST_QUAD
+#define  PA_TEST_QUAD
 #define SGN_TEST
 #define  BS_TEST
 
@@ -354,10 +354,10 @@ int32_t main(int32_t argc, char **argv)
     // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
     #define SGN_WLEN 10
     int32_t x_sgn_plain[SGN_WLEN] = {-2,+1,+2,+2,+1,-2,-1,+2,+0,+1,};   // LSB-first
-    //~ int32_t y_sgn_plain[SGN_WLEN] = {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
+    //                              {+0,-2,+1,+2,+1,+0,-2,+2,+1,+2,};
     int32_t sgn_plain = 0;
 
-    //~ int64_t exp_sgn = sgn_eval(&x_sgn_plain[0], SGN_WLEN);
+    int32_t exp_sgn = sgn_eval(&x_sgn_plain[0], SGN_WLEN);
 
     LweSample *x_sgn = new_LweSample_array(SGN_WLEN,     sgn_io_lwe_params);
     LweSample *sgn   = new_LweSample(sgn_io_lwe_params);
@@ -376,10 +376,9 @@ int32_t main(int32_t argc, char **argv)
     printf(" X  ");
     for (int32_t i = SGN_WLEN - 1; i >= 0; i--)
         printf("| %+d ", x_sgn_plain[i]);
-    printf("|\n");
-    //~ printf("| %+9ld\n", sgn_eval(&x_sgn_plain[0], SGN_WLEN));
+    printf("| %+9ld\n", quad_eval(&x_sgn_plain[0], SGN_WLEN));
     for (int32_t i = 0; i < SGN_WLEN+1; i++) printf("-----");
-    printf("   ");
+    printf("   ");fflush(stdout);
 
     // signum via parallel reduction
     parallel_sgn(sgn, x_sgn,
@@ -394,14 +393,11 @@ int32_t main(int32_t argc, char **argv)
 
     // print results
     // s
-    printf(" S  ");
-    printf("| %+d ", sgn_plain);
-    printf("\n");
-    //~ printf("| %+9ld   %s (exp. %+9ld)\n",
-                            //~ sgn_plain,
-                            //~ exp_sgn == sgn_plain ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
-                            //~ exp_sgn);
-    for (int32_t i = 0; i < SGN_WLEN+2; i++) printf("-----");
+    printf(" S  | %+d   %s (exp. %+d)\n",
+                            sgn_plain,
+                            exp_sgn == sgn_plain ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_sgn);
+    for (int32_t i = 0; i < SGN_WLEN+1; i++) printf("-----");
     printf("\n");
 
     // cleanup
@@ -433,8 +429,6 @@ int32_t main(int32_t argc, char **argv)
 
     // alloc samples
     LweSample *a  = new_LweSample(bs_io_lwe_params);   // bootstrapped variable
-    //~ LweSample *z0 = new_LweSample(bs_io_lwe_params);   // additive zero
-    //~ LweSample *z1 = new_LweSample(bs_io_lwe_params);   // additive zero
     LweSample *id = new_LweSample(bs_io_lwe_params);
     LweSample *gl = new_LweSample(bs_io_lwe_params);
     LweSample *eq = new_LweSample(bs_io_lwe_params);
@@ -448,11 +442,6 @@ int32_t main(int32_t argc, char **argv)
     {
         // encrypt
         sym_encr_priv(a, i - (1 << (pi-1)), pi, bs_tfhe_keys);
-        //~ sym_encr_priv(z0,                1, pi, bs_tfhe_keys);
-        //~ sym_encr_priv(z1,                1, pi, bs_tfhe_keys);
-        //~ lweAddTo(a, z, bs_io_lwe_params);
-        //~ lweAddMulTo(a, 1025, z0, bs_io_lwe_params);
-        //~ lweAddMulTo(a, 64, z1, bs_io_lwe_params);
 
         // bootstraps ...
         clock_t begin_id = clock();

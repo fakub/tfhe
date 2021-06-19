@@ -33,15 +33,15 @@
 #define  PA_SCENARIO_BIN        F_PARALLEL_2
 
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
-#define  PA_SCENARIO_QUAD       I_PARALLEL_4
+#define  PA_SCENARIO_QUAD       H_PARALLEL_4
 
 // choose TFHE parameters for signum test
-#define SGN_TFHE_PARAMS_INDEX   G_PARALLEL_4
+#define SGN_TFHE_PARAMS_INDEX   H_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
-#define  BS_TFHE_PARAMS_INDEX   G_PARALLEL_4
+#define  BS_TFHE_PARAMS_INDEX   H_PARALLEL_4
 
-#define DBG_OUT
+//~ #define DBG_OUT
 //~ #define NO_NOISE
 
 //  ----    do not edit    ----
@@ -295,6 +295,13 @@ int64_t quad_eval(const int32_t *const x,
  *
  */
 int64_t bin_eval(const int32_t *const x,
+                 const uint32_t len);
+
+/**
+ *  @brief          Description
+ *
+ */
+int32_t sgn_eval(const int32_t *const x,
                  const uint32_t len);
 
 #endif // #ifndef PARALLEL_ADDITION_IMPL_H

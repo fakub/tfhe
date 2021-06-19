@@ -523,8 +523,9 @@ void parallel_sgn(LweSample *sgn,
 
 #ifdef DBG_OUT
         printf("Last step\n");
+        int32_t  x_plain = sym_decr(x,   PI_Q, sk);
         int32_t  s_plain = sym_decr(sgn, PI_Q, sk);
-        printf("    sgn = %d\n", s_plain);fflush(stdout);
+        printf("    sgn(%d) = %d\n", x_plain, s_plain);fflush(stdout);
 #endif
 
         // progress bar end
@@ -537,7 +538,7 @@ void parallel_sgn(LweSample *sgn,
     const uint32_t new_wlen = (wlen_sgn+1) / 2;
 
 #ifdef DBG_OUT
-        printf("Size = %d\n", wlen_sgn);
+    printf("Size = %d\n", wlen_sgn);
 #endif
 
     // alloc aux variables / arrays
@@ -548,6 +549,19 @@ void parallel_sgn(LweSample *sgn,
 
     for (uint32_t i = 0; i < new_wlen; i++)
     {
+#ifdef DBG_OUT
+        int32_t  x2i_plain = sym_decr(x+2*i, PI_Q, sk);
+        //~ sym_encr_priv(x+2*i, x2i_plain, PI_Q, sk);
+        int32_t x2i1_plain = 0;
+        LweSample *z1    = new_LweSample(io_lwe_params);    // additive 1
+        //~ LweSample *xi_an = new_LweSample(io_lwe_params);    // x_i for analysis
+        //~ LweSample *r0_an = new_LweSample(io_lwe_params);    // r_0 for analysis
+        sym_encr_priv(z1, 1, PI_Q, sk);
+#else
+        // progress bar ...
+        printf("-");fflush(stdout);
+#endif
+
         //          r_0  = (x_2i       <=> +-1) * 2
         bs_gleq(    r0,     x + 2*i,         1,   2, PI_Q, bk);
         if ((i == new_wlen - 1) && (wlen_sgn & 1))
@@ -559,9 +573,12 @@ void parallel_sgn(LweSample *sgn,
         {
             //      r_1  =  x_2i+1     <=> +-1
             bs_gleq(r1,     x + 2*i+1,       1,   1, PI_Q, bk);
+#ifdef DBG_OUT
+            x2i1_plain = sym_decr(x + 2*i+1,    PI_Q, sk);
+#endif
         }
 #ifdef DBG_OUT
-        int32_t  r0_plain = sym_decr(r0,    PI_Q, sk);   // r0 is later reused
+        int32_t  r0_plain = sym_decr(r0,        PI_Q, sk);   // r0 is later reused
 #endif
         //          r_01 =  r_0 + r_1  ==  +-2
         lweAddTo(           r0,   r1,             io_lwe_params);
@@ -576,7 +593,18 @@ void parallel_sgn(LweSample *sgn,
         int32_t  r1_plain = sym_decr(r1,    PI_Q, sk);
         int32_t r01_plain = sym_decr(r01,   PI_Q, sk);
         int32_t  bi_plain = sym_decr(b + i, PI_Q, sk);
-        printf("        r_0 = %+d, r_1 = %+d, r_0 + r_1 = %+d, r_01 = %+d, b_i = %+d\n", r0_plain, r1_plain, r0r1plain, r01_plain, bi_plain);fflush(stdout);
+        printf("        x_2i = %+d, x_2i+1 = %+d\n", x2i_plain, x2i1_plain);
+        printf("        r_0  = %+d, r_1    = %+d\n", r0_plain, r1_plain);
+        printf("        r_0 + r_1 = %+d, r_01 = %+d, b_i = %+d\n", r0r1plain, r01_plain, bi_plain);fflush(stdout);
+
+        //~ for (int32_t k = -4; k <= 4; k++)
+        //~ {
+            //~ lweCopy(    xi_an, x + 2*i, io_lwe_params);
+            //~ lweAddMulTo(xi_an, k, z1, io_lwe_params);
+            //~ bs_gleq(r0_an, xi_an, 1, 2, PI_Q, bk);
+            //~ int32_t r0_an_plain = sym_decr(r0_an, PI_Q, sk);
+            //~ printf("            k = %+d: r_0 = %+d\n", k, r0_an_plain);
+        //~ }
 #endif
     }
 
@@ -627,6 +655,21 @@ int64_t bin_eval(const int32_t *const x,
     }
 
     return r;
+}
+
+int32_t sgn_eval(const int32_t *const x,
+                 const uint32_t len)
+{
+    if (len == 0) return 0;
+
+    int32_t i = len;
+
+    do
+    {
+        i--;
+    } while (i > 0 && x[i] == 0);
+
+    return (x[i] > 0) ? 1 : (x[i] < 0 ? -1 : 0);
 }
 
 
