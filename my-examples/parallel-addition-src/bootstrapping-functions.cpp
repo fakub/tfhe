@@ -129,12 +129,13 @@ void bs_mod(LweSample *result,
 void bs_gleq(LweSample *result,
              const LweSample *sample,
              const uint32_t thr,
+             const uint32_t mult,
              const uint32_t pi,
              const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
     const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
-    const Torus32 MU = modSwitchToTorus32(1, 1 << pi);
+    const Torus32 MU = modSwitchToTorus32(mult, 1 << pi);
 
     // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);

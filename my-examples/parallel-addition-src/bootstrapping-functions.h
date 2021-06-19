@@ -43,6 +43,7 @@ void bs_mod(LweSample *result,
 void bs_gleq(LweSample *result,
              const LweSample *sample,
              const uint32_t thr,
+             const uint32_t mult,
              const uint32_t pi,
              const TFheGateBootstrappingCloudKeySet *bk);
 

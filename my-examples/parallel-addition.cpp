@@ -432,7 +432,9 @@ int32_t main(int32_t argc, char **argv)
     TFheGateBootstrappingSecretKeySet *bs_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(bs_tfhe_params);
 
     // alloc samples
-    LweSample *a  = new_LweSample(bs_io_lwe_params);   // for BS testing
+    LweSample *a  = new_LweSample(bs_io_lwe_params);   // bootstrapped variable
+    //~ LweSample *z0 = new_LweSample(bs_io_lwe_params);   // additive zero
+    //~ LweSample *z1 = new_LweSample(bs_io_lwe_params);   // additive zero
     LweSample *id = new_LweSample(bs_io_lwe_params);
     LweSample *gl = new_LweSample(bs_io_lwe_params);
     LweSample *eq = new_LweSample(bs_io_lwe_params);
@@ -446,6 +448,11 @@ int32_t main(int32_t argc, char **argv)
     {
         // encrypt
         sym_encr_priv(a, i - (1 << (pi-1)), pi, bs_tfhe_keys);
+        //~ sym_encr_priv(z0,                1, pi, bs_tfhe_keys);
+        //~ sym_encr_priv(z1,                1, pi, bs_tfhe_keys);
+        //~ lweAddTo(a, z, bs_io_lwe_params);
+        //~ lweAddMulTo(a, 1025, z0, bs_io_lwe_params);
+        //~ lweAddMulTo(a, 64, z1, bs_io_lwe_params);
 
         // bootstraps ...
         clock_t begin_id = clock();
@@ -453,7 +460,7 @@ int32_t main(int32_t argc, char **argv)
         clock_t end_id = clock();
 
         // clock_t begin_gl = clock();
-        bs_gleq(gl, a, BS_THR, pi, &(bs_tfhe_keys->cloud));
+        bs_gleq(gl, a, BS_THR, 2, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_gl = clock();
 
         // clock_t begin_eq = clock();

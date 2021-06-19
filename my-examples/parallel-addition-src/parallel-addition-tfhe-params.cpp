@@ -17,8 +17,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 7,
         .ks_basebit = 2,
         .ks_length = 8,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-15),
         .bk_stdev = pow(2.,-25),
+#endif
         .max_stdev = 0.012467,
     },
     {   // A_CARRY_5_BS_BIN                 55 ms
@@ -30,8 +34,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 15,
         .ks_basebit = 1,
         .ks_length = 11,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-13.31),
         .bk_stdev = pow(2.,-31.20),
+#endif
         .max_stdev = 0.04167,
     },
     {   // B_CARRY_2_BS_BIN                 60 ms
@@ -43,8 +51,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 16,
         .ks_basebit = 1,
         .ks_length = 11,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-13.61),
         .bk_stdev = pow(2.,-32.53),
+#endif
         .max_stdev = 0.04167,
     },
     {   // C_CARRY_2_BIT                    95 ms
@@ -56,8 +68,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 9,
         .ks_basebit = 1,
         .ks_length = 13,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-15.73),
         .bk_stdev = pow(2.,-28.12),
+#endif
         .max_stdev = 0.01042,
     },
     {   // D_PARALLEL_2                     98 ms
@@ -69,8 +85,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 9,
         .ks_basebit = 1,
         .ks_length = 13,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-15.73),
         .bk_stdev = pow(2.,-28.12),
+#endif
         .max_stdev = 0.01042,
     },
     {   // E_PARALLEL_2                     103 ms
@@ -82,8 +102,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 10,
         .ks_basebit = 1,
         .ks_length = 14,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-16.78),
         .bk_stdev = pow(2.,-30.17),
+#endif
         .max_stdev = 0.01042,
     },
     {   // F_PARALLEL_2                     111 ms
@@ -95,8 +119,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 10,
         .ks_basebit = 1,
         .ks_length = 16,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-18.25),
         .bk_stdev = pow(2.,-31.60),
+#endif
         .max_stdev = 0.005208,
     },
     {   // G_PARALLEL_4                     106 ms
@@ -108,8 +136,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 10,
         .ks_basebit = 1,
         .ks_length = 15,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-17.62),
         .bk_stdev = pow(2.,-31.00),
+#endif
         .max_stdev = 0.01042,
     },
     {   // H_PARALLEL_4                     113 ms
@@ -121,8 +153,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 11,
         .ks_basebit = 1,
         .ks_length = 16,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-18.67),
         .bk_stdev = pow(2.,-33.04),
+#endif
         .max_stdev = 0.005208,
     },
     {   // I_PARALLEL_4                     547 ms, but erroneous results !! (and the problem is not at N = 4096 FFT processor,
@@ -135,8 +171,12 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .bk_Bgbit = 24,
         .ks_basebit = 1,
         .ks_length = 20,
+#ifdef NO_NOISE
+        .ks_stdev = 0.0, .bk_stdev = 0.0,
+#else
         .ks_stdev = pow(2.,-22.35),
         .bk_stdev = pow(2.,-49.19),
+#endif
         .max_stdev = 0.001302,
     },
 };

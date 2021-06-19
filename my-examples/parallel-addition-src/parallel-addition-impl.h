@@ -39,9 +39,10 @@
 #define SGN_TFHE_PARAMS_INDEX   G_PARALLEL_4
 
 // choose TFHE parameters for bootstrapping tests
-#define  BS_TFHE_PARAMS_INDEX   F_PARALLEL_2
+#define  BS_TFHE_PARAMS_INDEX   G_PARALLEL_4
 
 #define DBG_OUT
+//~ #define NO_NOISE
 
 //  ----    do not edit    ----
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
