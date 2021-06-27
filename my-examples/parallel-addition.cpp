@@ -15,10 +15,10 @@
 
 #include <parallel-addition-impl.h>
 
-#define  SEQ_TEST
+//~ #define  SEQ_TEST
 //~ #define  PA_TEST_BIN
 //~ #define  PA_TEST_QUAD
-//~ #define SGN_TEST
+#define SGN_TEST
 //~ #define  BS_TEST
 
 using namespace std;
@@ -133,7 +133,7 @@ int32_t main(int32_t argc, char **argv)
     // decrypt
     for (int32_t i = 0; i <= SEQ_WLEN; i++)
 #if (SEQ_SCENARIO == C_CARRY_2_BIT)
-        z_seq_plain[i] = sym_decr(z_seq + i, PI_S, seq_tfhe_keys);
+        z_seq_plain[i] = sym_decr(z_seq + i, PI_SEQ, seq_tfhe_keys);
 #else
         z_seq_plain[i] = bin_sym_decr(z_seq + i, seq_tfhe_keys);
 #endif
@@ -224,7 +224,7 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= PA_BIN_WLEN; i++)
-        z_pa_bin_plain[i] = sym_decr(z_pa_bin + i, PI_B, pa_bin_tfhe_keys);
+        z_pa_bin_plain[i] = sym_decr(z_pa_bin + i, PI_PAB, pa_bin_tfhe_keys);
 
     // print results
     // z
@@ -312,7 +312,7 @@ int32_t main(int32_t argc, char **argv)
 
     // decrypt
     for (int32_t i = 0; i <= PA_QUAD_WLEN; i++)
-        z_pa_plain[i] = sym_decr(z_pa_quad + i, PI_Q, pa_quad_tfhe_keys);
+        z_pa_plain[i] = sym_decr(z_pa_quad + i, PI_PAQ, pa_quad_tfhe_keys);
 
     // print results
     // z
@@ -365,7 +365,7 @@ int32_t main(int32_t argc, char **argv)
     // encrypt
     for (int32_t i = 0; i < SGN_WLEN; i++)
     {
-        paral_quad_sym_encr(x_sgn + i, x_sgn_plain[i], sgn_tfhe_keys);
+        sgn_sym_encr(x_sgn + i, x_sgn_plain[i], sgn_tfhe_keys);
     }
 
     // print inputs
@@ -376,7 +376,7 @@ int32_t main(int32_t argc, char **argv)
     printf(" X  ");
     for (int32_t i = SGN_WLEN - 1; i >= 0; i--)
         printf("| %+d ", x_sgn_plain[i]);
-    printf("| %+9ld\n", quad_eval(&x_sgn_plain[0], SGN_WLEN));
+    printf("| (in base 4: %+9ld)\n", quad_eval(&x_sgn_plain[0], SGN_WLEN));
     for (int32_t i = 0; i < SGN_WLEN+1; i++) printf("-----");
     printf("   ");fflush(stdout);
 
@@ -389,7 +389,7 @@ int32_t main(int32_t argc, char **argv)
                       &(sgn_tfhe_keys->cloud));
 
     // decrypt
-    sgn_plain = sym_decr(sgn, PI_Q, sgn_tfhe_keys);
+    sgn_plain = sym_decr(sgn, PI_SGN, sgn_tfhe_keys);
 
     // print results
     // s

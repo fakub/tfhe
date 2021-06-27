@@ -41,7 +41,7 @@
 // choose TFHE parameters for bootstrapping tests
 #define  BS_TFHE_PARAMS_INDEX   C_CARRY_2_BIT
 
-#define DBG_OUT
+//~ #define DBG_OUT
 //~ #define NO_NOISE
 
 //  ----    do not edit    ----
@@ -91,9 +91,10 @@ typedef struct tfhe_params_t
  * */
 extern const tfhe_params_t tfhe_params_store[N_PARAM_SETS];
 
-extern const uint32_t PI_S;
-extern const uint32_t PI_B;
-extern const uint32_t PI_Q;
+extern const uint32_t PI_SEQ;
+extern const uint32_t PI_PAB;
+extern const uint32_t PI_PAQ;
+extern const uint32_t PI_SGN;
 
 
 // =============================================================================
@@ -156,6 +157,14 @@ void paral_quad_sym_encr(LweSample *ct,
 void paral_bin_sym_encr(LweSample *ct,
                         const int32_t message,
                         const TFheGateBootstrappingSecretKeySet *sk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void sgn_sym_encr(LweSample *ct,
+                  const int32_t message,
+                  const TFheGateBootstrappingSecretKeySet *sk);
 
 /**
  *  @brief          Description

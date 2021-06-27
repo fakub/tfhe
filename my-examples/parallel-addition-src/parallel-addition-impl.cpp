@@ -70,9 +70,10 @@ static void paral_calc_zi_quad(LweSample *zi,
 
 //  ----    TFHE params moved to separate file    ----
 
-extern const uint32_t PI_S = tfhe_params_store[SEQ_TFHE_PARAMS_INDEX].pi;
-extern const uint32_t PI_B = tfhe_params_store[PAB_TFHE_PARAMS_INDEX].pi;
-extern const uint32_t PI_Q = tfhe_params_store[PAQ_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_SEQ = tfhe_params_store[SEQ_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_PAB = tfhe_params_store[PAB_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_PAQ = tfhe_params_store[PAQ_TFHE_PARAMS_INDEX].pi;
+extern const uint32_t PI_SGN = tfhe_params_store[SGN_TFHE_PARAMS_INDEX].pi;
 
 
 // =============================================================================
@@ -144,7 +145,7 @@ void seq_quad_sym_encr(LweSample *ct,
     if ((message < 0) || (3 < message))
         die_soon("Out of the alphabet A = [0 .. 3].");
 
-    sym_encr_priv(ct, message, PI_S, sk);
+    sym_encr_priv(ct, message, PI_SEQ, sk);
 }
 
 void paral_quad_sym_encr(LweSample *ct,
@@ -154,7 +155,7 @@ void paral_quad_sym_encr(LweSample *ct,
     if ((message < -2) || (2 < message))
         die_soon("Out of the alphabet A = [-2 .. 2].");
 
-    sym_encr_priv(ct, message, PI_Q, sk);
+    sym_encr_priv(ct, message, PI_PAQ, sk);
 }
 
 void paral_bin_sym_encr(LweSample *ct,
@@ -164,7 +165,17 @@ void paral_bin_sym_encr(LweSample *ct,
     if ((message < -1) || (1 < message))
         die_soon("Out of the alphabet A = [-1 .. 1].");
 
-    sym_encr_priv(ct, message, PI_B, sk);
+    sym_encr_priv(ct, message, PI_PAB, sk);
+}
+
+void sgn_sym_encr(LweSample *ct,
+                  const int32_t message,
+                  const TFheGateBootstrappingSecretKeySet *sk)
+{
+    if ((message <= -(1 << (PI_SGN-1))) || ((1 << (PI_SGN-1)) <= message))
+        die_soon("Out of the interval = (-2^(pi-1) .. 2^(pi-1)).");
+
+    sym_encr_priv(ct, message, PI_SGN, sk);
 }
 
 int32_t sym_decr(const LweSample *ct,
@@ -328,20 +339,20 @@ void sequential_add(LweSample *z,
         lweAddTo(w,     c, io_lwe_params);
 
         // c = (0,0,0,0,1,1,1,1)[w]   (using trick with 1/2)
-        bs_01(c, w, PI_S, bk);
+        bs_01(c, w, PI_SEQ, bk);
 
         // z_i = w_i - 4 c
         lweSubMulTo(w, 4, c, io_lwe_params);
 
         // bootstrap with identity (at positive interval)
-        bs_pos_id(z + i, w, PI_S, bk);
+        bs_pos_id(z + i, w, PI_SEQ, bk);
 
 #ifdef DBG_OUT
         printf("Position #%d\n", i);
-        int32_t x_plain = sym_decr(x + i, PI_S, sk);
-        int32_t y_plain = sym_decr(y + i, PI_S, sk);
-        int32_t c_plain = sym_decr(c,     PI_S, sk);
-        int32_t z_plain = sym_decr(z + i, PI_S, sk);
+        int32_t x_plain = sym_decr(x + i, PI_SEQ, sk);
+        int32_t y_plain = sym_decr(y + i, PI_SEQ, sk);
+        int32_t c_plain = sym_decr(c,     PI_SEQ, sk);
+        int32_t z_plain = sym_decr(z + i, PI_SEQ, sk);
         printf("    x = %d, y = %d, z = %d, c = %d\n", x_plain, y_plain, z_plain, c_plain);fflush(stdout);
 #endif
     }
@@ -416,11 +427,11 @@ void parallel_add_bin(LweSample *z,
     for (uint32_t i = 0; i < wlen_bin; i++)
     {
         printf("Position #%d\n", i);
-        int32_t x_plain = sym_decr(x + i, PI_B, sk);
-        int32_t y_plain = sym_decr(y + i, PI_B, sk);
-        int32_t z_plain = sym_decr(z + i, PI_B, sk);
-        int32_t w_plain = sym_decr(w + i, PI_B, sk);
-        int32_t q_plain = sym_decr(q + i, PI_B, sk);
+        int32_t x_plain = sym_decr(x + i, PI_PAB, sk);
+        int32_t y_plain = sym_decr(y + i, PI_PAB, sk);
+        int32_t z_plain = sym_decr(z + i, PI_PAB, sk);
+        int32_t w_plain = sym_decr(w + i, PI_PAB, sk);
+        int32_t q_plain = sym_decr(q + i, PI_PAB, sk);
         printf("    x = %d, y = %d, z = %d, w = %d, q = %d\n", x_plain, y_plain, z_plain, w_plain, q_plain);fflush(stdout);
     }
 #endif
@@ -486,11 +497,11 @@ void parallel_add_quad(LweSample *z,
     for (uint32_t i = 0; i < wlen_quad; i++)
     {
         printf("Position #%d\n", i);
-        int32_t x_plain = sym_decr(x + i, PI_Q, sk);
-        int32_t y_plain = sym_decr(y + i, PI_Q, sk);
-        int32_t z_plain = sym_decr(z + i, PI_Q, sk);
-        int32_t w_plain = sym_decr(w + i, PI_Q, sk);
-        int32_t q_plain = sym_decr(q + i, PI_Q, sk);
+        int32_t x_plain = sym_decr(x + i, PI_PAQ, sk);
+        int32_t y_plain = sym_decr(y + i, PI_PAQ, sk);
+        int32_t z_plain = sym_decr(z + i, PI_PAQ, sk);
+        int32_t w_plain = sym_decr(w + i, PI_PAQ, sk);
+        int32_t q_plain = sym_decr(q + i, PI_PAQ, sk);
         printf("    x = %d, y = %d, z = %d, w = %d, q = %d\n", x_plain, y_plain, z_plain, w_plain, q_plain);fflush(stdout);
     }
 #endif
@@ -523,12 +534,12 @@ void parallel_sgn(LweSample *sgn,
     if (wlen_sgn == 1)
     {
         // bootstrap one more time (this is actually signum) & return
-        bs_gleq(sgn, x, 1, 1, PI_Q, bk);
+        bs_gleq(sgn, x, 1, 1, PI_SGN, bk);
 
 #ifdef DBG_OUT
         printf("Last step\n");
-        int32_t  x_plain = sym_decr(x,   PI_Q, sk);
-        int32_t  s_plain = sym_decr(sgn, PI_Q, sk);
+        int32_t  x_plain = sym_decr(x,   PI_SGN, sk);
+        int32_t  s_plain = sym_decr(sgn, PI_SGN, sk);
         printf("    sgn(%d) = %d\n", x_plain, s_plain);fflush(stdout);
 #endif
 
@@ -538,75 +549,66 @@ void parallel_sgn(LweSample *sgn,
         return;
     }
 
-    // calc new length (ceiled half)
-    const uint32_t new_wlen = (wlen_sgn+1) / 2;
+    const uint32_t gamma = PI_SGN - 1;
+    // calc new length (ceiled wlen_sgn / gamma)
+    const uint32_t new_wlen = (wlen_sgn-1) / gamma + 1;
 
 #ifdef DBG_OUT
     printf("Size = %d\n", wlen_sgn);
 #endif
 
     // alloc aux variables / arrays
-    LweSample *b   = new_LweSample_array(new_wlen, io_lwe_params);
-    LweSample *r0  = new_LweSample(io_lwe_params);
-    LweSample *r1  = new_LweSample(io_lwe_params);
-    LweSample *r01 = new_LweSample(io_lwe_params);
+    LweSample *b = new_LweSample_array(new_wlen, io_lwe_params);
+    LweSample *s = new_LweSample(io_lwe_params);
 
-    for (uint32_t i = 0; i < new_wlen; i++)
+    for (uint32_t j = 0; j < new_wlen; j++)
     {
 #ifdef DBG_OUT
-        int32_t  x2i_plain = sym_decr(x+2*i, PI_Q, sk);
-        //~ sym_encr_priv(x+2*i, x2i_plain, PI_Q, sk);
-        int32_t x2i1_plain = 0;
-        LweSample *z1    = new_LweSample(io_lwe_params);    // additive 1
+        //~ int32_t  x2i_plain = sym_decr(x+2*i, PI_SGN, sk);
+        //~ sym_encr_priv(x+2*i, x2i_plain, PI_SGN, sk);
+        //~ int32_t x2i1_plain = 0;
+        //~ LweSample *z1    = new_LweSample(io_lwe_params);    // additive 1
         //~ LweSample *xi_an = new_LweSample(io_lwe_params);    // x_i for analysis
         //~ LweSample *r0_an = new_LweSample(io_lwe_params);    // r_0 for analysis
-        sym_encr_priv(z1, 1, PI_Q, sk);
+        //~ sym_encr_priv(z1, 1, PI_SGN, sk);
 #else
         // progress bar ...
         printf("-");fflush(stdout);
 #endif
 
-        //          r_0  = (x_2i       <=> +-1) * 2
-        bs_gleq(    r0,     x + 2*i,         1,   2, PI_Q, bk);
-        if ((i == new_wlen - 1) && (wlen_sgn & 1))
+        // init b + j = 0
+        lweNoiselessTrivial(b + j, 0, io_lwe_params);
+
+        for (uint32_t i = 0; i < gamma; i++)
         {
-            // x_2i+1 out of range
-            lweNoiselessTrivial(r1, 0, io_lwe_params);
-        }
-        else
-        {
-            //      r_1  =  x_2i+1     <=> +-1
-            bs_gleq(r1,     x + 2*i+1,       1,   1, PI_Q, bk);
+            //         s  = (x_(gamma*j+i) <=> +-1) * 2^i
+            //TODO set to zero if out of range
+            if (gamma*j+i >= wlen_sgn)
+            {
+                lweNoiselessTrivial(s, 0, io_lwe_params);
+            }
+            else
+            {
+                bs_gleq(   s,    x +gamma*j+i,       1,  (1<<i), PI_SGN, bk);
+            }
+            //       b_j += s
+            lweAddTo(b+j,   s, io_lwe_params);
 #ifdef DBG_OUT
-            x2i1_plain = sym_decr(x + 2*i+1,    PI_Q, sk);
+            //~ int32_t s_plain = sym_decr(s,    PI_SGN, sk);
 #endif
         }
-#ifdef DBG_OUT
-        int32_t  r0_plain = sym_decr(r0,        PI_Q, sk);   // r0 is later reused
-#endif
-        //          r_01 =  r_0 + r_1  ==  +-2
-        lweAddTo(           r0,   r1,             io_lwe_params);
-        bs_eq(      r01,    r0,              2,   PI_Q, bk);
-        //          b_i  =  r_1 + r_01
-        lweCopy(    b + i,  r1,                   io_lwe_params);
-        lweAddTo(   b + i,        r01,            io_lwe_params);
 
 #ifdef DBG_OUT
-        printf("    Position #%d\n", i);
-        int32_t r0r1plain = sym_decr(r0,    PI_Q, sk);
-        int32_t  r1_plain = sym_decr(r1,    PI_Q, sk);
-        int32_t r01_plain = sym_decr(r01,   PI_Q, sk);
-        int32_t  bi_plain = sym_decr(b + i, PI_Q, sk);
-        printf("        x_2i = %+d, x_2i+1 = %+d\n", x2i_plain, x2i1_plain);
-        printf("        r_0  = %+d, r_1    = %+d\n", r0_plain, r1_plain);
-        printf("        r_0 + r_1 = %+d, r_01 = %+d, b_i = %+d\n", r0r1plain, r01_plain, bi_plain);fflush(stdout);
+        printf("    Position #%d\n", j);
+        int32_t  bj_plain = sym_decr(b + j, PI_SGN, sk);
+        printf("        b_j = %+d\n", bj_plain);fflush(stdout);
 
         //~ for (int32_t k = -4; k <= 4; k++)
         //~ {
             //~ lweCopy(    xi_an, x + 2*i, io_lwe_params);
             //~ lweAddMulTo(xi_an, k, z1, io_lwe_params);
-            //~ bs_gleq(r0_an, xi_an, 1, 2, PI_Q, bk);
-            //~ int32_t r0_an_plain = sym_decr(r0_an, PI_Q, sk);
+            //~ bs_gleq(r0_an, xi_an, 1, 2, PI_SGN, bk);
+            //~ int32_t r0_an_plain = sym_decr(r0_an, PI_SGN, sk);
             //~ printf("            k = %+d: r_0 = %+d\n", k, r0_an_plain);
         //~ }
 #endif
@@ -621,9 +623,7 @@ void parallel_sgn(LweSample *sgn,
 
     // cleanup
     delete_LweSample_array(new_wlen, b);
-    delete_LweSample(r0 );
-    delete_LweSample(r1 );
-    delete_LweSample(r01);
+    delete_LweSample(s);
 }
 
 // -----------------------------------------------------------------------------
@@ -705,10 +705,10 @@ static void paral_calc_qi_bin(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-2
-        bs_gleq(r1,      w_i0,     2,   1, PI_B, bk);
+        bs_gleq(r1,      w_i0,     2,   1, PI_PAB, bk);
 
         //      r2   =   w_i == +-1
-        bs_eq  (r2,      w_i0,    1,    PI_B, bk);
+        bs_eq  (r2,      w_i0,    1,    PI_PAB, bk);
 
         if (w_i1 == NULL)
         {
@@ -718,12 +718,12 @@ static void paral_calc_qi_bin(LweSample *qi,
         else
         {
             //      r3   =   w_i-1 <=> +-1
-            bs_gleq(r3,      w_i1,       1,   1, PI_B, bk);
+            bs_gleq(r3,      w_i1,       1,   1, PI_PAB, bk);
         }
 
         //      r23: r2+r3 == +-2
         lweAddTo(    r2,r3,         io_lwe_params);
-        bs_eq  (r23, r2,        2,  PI_B, bk);
+        bs_eq  (r23, r2,        2,  PI_PAB, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -740,10 +740,10 @@ static void paral_calc_qi_bin(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-2
-        bs_gleq(r1,      w_i0,     2,   1, PI_B, bk);
+        bs_gleq(r1,      w_i0,     2,   1, PI_PAB, bk);
 
         //      r2   =   w_i == +-1
-        bs_eq  (r2,      w_i0,    1,    PI_B, bk);
+        bs_eq  (r2,      w_i0,    1,    PI_PAB, bk);
 
         if (w_i1 == NULL)
         {
@@ -755,7 +755,7 @@ static void paral_calc_qi_bin(LweSample *qi,
         }
         //      r23   =   w_i-1     + 2 r2 <=> +-3
         lweAddMulTo(      w_i1__2_r2, 2,r2,         io_lwe_params);         // w_i1__2_r2 = w_i-1 + 2 r2
-        bs_gleq(r23,      w_i1__2_r2,            3, 1, PI_B, bk);
+        bs_gleq(r23,      w_i1__2_r2,            3, 1, PI_PAB, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -781,7 +781,7 @@ static void paral_calc_qi_bin(LweSample *qi,
 
         //      q_i   =   w_i-1 + 3 w_i <=> +-4
         lweAddMulTo(      r1,     3,w_i0,          io_lwe_params); // r1 = w_i-1 + 3 w_i
-        bs_gleq(qi,       r1,                 4,   1, PI_B, bk);
+        bs_gleq(qi,       r1,                 4,   1, PI_PAB, bk);
     }
 
 #else
@@ -827,7 +827,7 @@ static void paral_calc_zi_bin(LweSample *zi,
     printf("-");fflush(stdout);
 
     // bootstrap to refresh noise
-    bs_id(zi, tmpz, PI_B, bk);
+    bs_id(zi, tmpz, PI_PAB, bk);
 
     // cleanup
     delete_LweSample(tmpz);
@@ -856,10 +856,10 @@ static void paral_calc_qi_quad(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-3
-        bs_gleq(r1,      w_i0,     3,   1, PI_Q, bk);
+        bs_gleq(r1,      w_i0,     3,   1, PI_PAQ, bk);
 
         //      r2   =   w_i == +-2
-        bs_eq  (r2,      w_i0,    2,    PI_Q, bk);
+        bs_eq  (r2,      w_i0,    2,    PI_PAQ, bk);
 
         if (w_i1 == NULL)
         {
@@ -869,12 +869,12 @@ static void paral_calc_qi_quad(LweSample *qi,
         else
         {
             //      r3   =   w_i-1 <=> +-2
-            bs_gleq(r3,      w_i1,       2,   1, PI_Q, bk);
+            bs_gleq(r3,      w_i1,       2,   1, PI_PAQ, bk);
         }
 
         //      r23: r2+r3 == +-2
         lweAddTo(    r2,r3,         io_lwe_params);
-        bs_eq  (r23, r2,        2,  PI_Q, bk);
+        bs_eq  (r23, r2,        2,  PI_PAQ, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -891,10 +891,10 @@ static void paral_calc_qi_quad(LweSample *qi,
         LweSample *r23= new_LweSample(io_lwe_params);
 
         //      r1   =   w_i <=> +-3
-        bs_gleq(r1,      w_i0,     3,   1, PI_Q, bk);
+        bs_gleq(r1,      w_i0,     3,   1, PI_PAQ, bk);
 
         //      r2   =   w_i == +-2
-        bs_eq  (r2,      w_i0,    2,    PI_Q, bk);
+        bs_eq  (r2,      w_i0,    2,    PI_PAQ, bk);
 
         if (w_i1 == NULL)
         {
@@ -906,7 +906,7 @@ static void paral_calc_qi_quad(LweSample *qi,
         }
         //      r23   =   w_i-1     + 3 r2 <=> +-5
         lweAddMulTo(      w_i1__3_r2, 3,r2,         io_lwe_params);         // w_i1__3_r2 = w_i-1 + 3 r2
-        bs_gleq(r23,      w_i1__3_r2,            5, 1, PI_Q, bk);
+        bs_gleq(r23,      w_i1__3_r2,            5, 1, PI_PAQ, bk);
 
         //      q_i   =   r1 + r23
         lweCopy (qi,      r1,       io_lwe_params);
@@ -930,7 +930,7 @@ static void paral_calc_qi_quad(LweSample *qi,
 
         //      q_i   =   w_i-1 + 6 w_i <=> +-14
         lweAddMulTo(      r1,     6,w_i0,           io_lwe_params); // r1 = w_i-1 + 6 w_i
-        bs_gleq(qi,       r1,                 14,   1, PI_Q, bk);
+        bs_gleq(qi,       r1,                 14,   1, PI_PAQ, bk);
     }
 
 #else
@@ -978,7 +978,7 @@ static void paral_calc_zi_quad(LweSample *zi,
 #endif
 
     // bootstrap to refresh noise
-    bs_id(zi, tmpz, PI_Q, bk);
+    bs_id(zi, tmpz, PI_PAQ, bk);
 
     // cleanup
     delete_LweSample(tmpz);
