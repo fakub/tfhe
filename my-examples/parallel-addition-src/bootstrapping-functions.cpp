@@ -28,6 +28,15 @@ static void bs_set_tv_identity(Torus32 *const tv,
                                const Torus32 MU);
 
 /**
+ *  @brief          Identity around zero: [-2^pi / 4, 2^pi / 4]
+ *
+ */
+static void bs_set_tv_pos_identity(Torus32 *const tv,
+                                   const uint32_t N,
+                                   const uint32_t pi,
+                                   const Torus32 MU);
+
+/**
  *  @brief          Identity at positive half: [0, 2^pi / 2)
  *
  */
@@ -56,6 +65,16 @@ static void bs_set_tv_pos_gleq(Torus32 *const tv,
                                const uint32_t pi,
                                const uint32_t thr,
                                const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
+static void bs_set_tv_const(Torus32 *const tv,
+                            const uint32_t N,
+                            const uint32_t pi,
+                            const double val,
+                            const Torus32 MU);
 
 /**
  *  @brief          Description
@@ -97,6 +116,26 @@ void bs_id(LweSample *result,
     // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);
     bs_set_tv_identity(&testvect->coefsT[0], N, pi, MU);
+
+    // call BS priv
+    bs_with_tv(result, sample, bk, testvect);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+
+void bs_pos_id(LweSample *result,
+               const LweSample *sample,
+               const uint32_t pi,
+               const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
+    const Torus32 MU = modSwitchToTorus32(1, 1 << pi);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    bs_set_tv_pos_identity(&testvect->coefsT[0], N, pi, MU);
 
     // call BS priv
     bs_with_tv(result, sample, bk, testvect);
@@ -169,6 +208,34 @@ void bs_pos_gleq(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
+void bs_01(LweSample *result,
+           const LweSample *sample,
+           const uint32_t pi,
+           const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
+    const Torus32 MU = modSwitchToTorus32(1, 1 << pi);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    bs_set_tv_const(&testvect->coefsT[0], N, pi, -0.5, MU);   // -1/2 ... | +1/2 ...
+
+    // call BS priv
+    bs_with_tv(result, sample, bk, testvect);
+
+    // result += 1/2
+    const LweParams *io_lwe_params = bk->params->in_out_params;
+    LweSample *half = new_LweSample(io_lwe_params);
+    lweNoiselessTrivial(half, modSwitchToTorus32(1, 1 << (pi+1)), io_lwe_params);
+    lweAddTo(result, half, io_lwe_params);
+    // delete half
+    delete_LweSample(half);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+
 void bs_eq(LweSample *result,
            const LweSample *sample,
            const uint32_t thr,
@@ -232,6 +299,26 @@ static void bs_set_tv_identity(Torus32 *const tv,
     {
         for (i = s * (N >> (pi-1)) - (N >> pi);  i < s * (N >> (pi-1)) + (N >> pi); i++)
             tv[i] = (-s + (1 << (pi-1))) * MU;
+    }
+}
+
+static void bs_set_tv_pos_identity(Torus32 *const tv,
+                                   const uint32_t N,
+                                   const uint32_t pi,
+                                   const Torus32 MU)
+{
+    uint32_t i, s;
+
+    // make a 0-stair around zero (and 2^(pi-1))
+    for (i = 0; i < (N >> pi); i++)     tv[i] = 0;
+    for (i = N - (N >> pi); i < N; i++) tv[i] = 0;
+
+    // make other stairs
+    // from 1 to 2^(pi-2) - 1
+    for (s = 1u; s < (1u << (pi-1)); s++)
+    {
+        for (i = s * (N >> (pi-1)) - (N >> pi);  i < s * (N >> (pi-1)) + (N >> pi); i++)
+            tv[i] = s * MU;
     }
 }
 
@@ -335,6 +422,29 @@ static void bs_set_tv_pos_gleq(Torus32 *const tv,
         for (i = s * (N >> (pi-1)) - (N >> pi);  i < s * (N >> (pi-1)) + (N >> pi); i++)
             tv[i] = 1 * MU;
     }
+}
+
+static void bs_set_tv_const(Torus32 *const tv,
+                            const uint32_t N,
+                            const uint32_t pi,
+                            const double val,   // c
+                            const Torus32 MU)
+{
+    uint32_t i;
+
+    //          <-- to be set up manually ----->    <-- negacyclic extension ------>
+    //        |                                  |                                   |
+    //   c    | ———————————————————————————————— |                                   |
+    //   :    |                                  |    8   9  10  11  12  13  14  15  |
+    //   0 ·· | ·······························  |  ································ | ····
+    //   :    |   0   1   2   3   4   5   6   7  |                                   |
+    //  -c    |                                  |  ———————————————————————————————— |
+    //        |                                  |                                   |
+
+    // make the positive part (positive half around zero and the others)
+    for (i = 0; i < N - (N >> pi); i++) tv[i] =  (Torus32)(val * MU);
+    // make the negative half around zero
+    for (i = N - (N >> pi); i < N; i++) tv[i] = -(Torus32)(val * MU);
 }
 
 static void bs_set_tv_eq(Torus32 *const tv,

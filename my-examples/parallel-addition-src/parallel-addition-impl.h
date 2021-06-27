@@ -36,12 +36,12 @@
 #define  PA_SCENARIO_QUAD       H_PARALLEL_4
 
 // choose TFHE parameters for signum test
-#define SGN_TFHE_PARAMS_INDEX   H_PARALLEL_4
+#define SGN_TFHE_PARAMS_INDEX   F_PARALLEL_2
 
 // choose TFHE parameters for bootstrapping tests
-#define  BS_TFHE_PARAMS_INDEX   H_PARALLEL_4
+#define  BS_TFHE_PARAMS_INDEX   C_CARRY_2_BIT
 
-//~ #define DBG_OUT
+#define DBG_OUT
 //~ #define NO_NOISE
 
 //  ----    do not edit    ----

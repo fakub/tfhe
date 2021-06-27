@@ -317,7 +317,7 @@ void sequential_add(LweSample *z,
         printf("-");fflush(stdout);
 #endif
 
-        // z_i = ID(x_i + y_i + c)
+        // w = x_i + y_i + c
         // init w = 0
         lweNoiselessTrivial(w, 0, io_lwe_params);
         // w += x_i
@@ -326,11 +326,15 @@ void sequential_add(LweSample *z,
         lweAddTo(w, y + i, io_lwe_params);
         // w += c
         lweAddTo(w,     c, io_lwe_params);
-        // z_i = w % 4
-        bs_mod(z + i, w, 4, PI_S, bk);
 
-        // c = (w >= 4)
-        bs_pos_gleq(c, w, 4, PI_S, bk);
+        // c = (0,0,0,0,1,1,1,1)[w]   (using trick with 1/2)
+        bs_01(c, w, PI_S, bk);
+
+        // z_i = w_i - 4 c
+        lweSubMulTo(w, 4, c, io_lwe_params);
+
+        // bootstrap with identity (at positive interval)
+        bs_pos_id(z + i, w, PI_S, bk);
 
 #ifdef DBG_OUT
         printf("Position #%d\n", i);

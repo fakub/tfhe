@@ -15,11 +15,11 @@
 
 #include <parallel-addition-impl.h>
 
-//~ #define  SEQ_TEST
+#define  SEQ_TEST
 //~ #define  PA_TEST_BIN
-#define  PA_TEST_QUAD
-#define SGN_TEST
-#define  BS_TEST
+//~ #define  PA_TEST_QUAD
+//~ #define SGN_TEST
+//~ #define  BS_TEST
 
 using namespace std;
 
@@ -70,7 +70,7 @@ int32_t main(int32_t argc, char **argv)
         x_seq_plain[i] = x_seq_plain_bin[2*i] + 2*x_seq_plain_bin[2*i+1];
         y_seq_plain[i] = y_seq_plain_bin[2*i] + 2*y_seq_plain_bin[2*i+1];
     }
-    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &quad_eval;
+    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &quad_eval;   // indeed a function pointer
 
     // base 2 scenarios A, B
 #else
@@ -82,7 +82,7 @@ int32_t main(int32_t argc, char **argv)
         x_seq_plain[i] = x_seq_plain_bin[i];
         y_seq_plain[i] = y_seq_plain_bin[i];
     }
-    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &bin_eval;
+    int64_t (*seq_eval)(const int32_t *const, const uint32_t) = &bin_eval;    // indeed a function pointer
 #endif
     int32_t z_seq_plain[SEQ_WLEN + 1];
 

@@ -27,6 +27,15 @@ void bs_id(LweSample *result,
            const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
+ *  @brief          Identity around zero
+ *
+ */
+void bs_pos_id(LweSample *result,
+               const LweSample *sample,
+               const uint32_t pi,
+               const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
  *  @brief          Identity at positive half
  *
  */
@@ -56,6 +65,15 @@ void bs_pos_gleq(LweSample *result,
                  const uint32_t thr,
                  const uint32_t pi,
                  const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
+ *  @brief          Description
+ *
+ */
+void bs_01(LweSample *result,
+           const LweSample *sample,
+           const uint32_t pi,
+           const TFheGateBootstrappingCloudKeySet *bk);
 
 /**
  *  @brief          Description
