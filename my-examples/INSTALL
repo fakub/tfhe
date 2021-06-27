@@ -1,4 +1,14 @@
 
-Run this in .../TFHE-Lib/build$
+Run the following command (with your favourite FFT processor) in /path-to/tfhe/build$
 
 cmake ../src -DCMAKE_INSTALL_PREFIX=../bin -DENABLE_TESTS=off -DENABLE_SPQLIOS_AVX=off -DENABLE_SPQLIOS_FMA=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off -DENABLE_NAYUKI_FFNT_PORTABLE=off -DENABLE_NAYUKI_FFNT_AVX=off  -DCMAKE_BUILD_TYPE=optim
+make && make install
+
+
+Then run in /path-to/tfhe/my-examples/build$
+
+cmake ..
+make
+
+
+The binary is ready to rock!

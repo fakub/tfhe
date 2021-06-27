@@ -1,3 +1,11 @@
+# This is a fork of the TFHE Library
+
+This fork implements many parallelizable examples in the `my-examples` folder. It also includes INSTALL file with commands ready-to-use.
+
+Several changes to the TFHE Library were also made. In particular, the nayuki FFT processor compiles with a couple of lengths other than 1024. However, its proper operation with the TFHE Library is not guaranteed.
+
+Find the original README below:
+
 # TFHE
 Fast Fully Homomorphic Encryption Library over the Torus
 
