@@ -18,7 +18,8 @@
 //~ #define  SEQ_TEST
 //~ #define  PA_TEST_BIN
 //~ #define  PA_TEST_QUAD
-#define SGN_TEST
+//~ #define SGN_TEST
+#define MAX_TEST
 //~ #define  BS_TEST
 
 using namespace std;
@@ -406,6 +407,91 @@ int32_t main(int32_t argc, char **argv)
 #endif
 
 
+#ifdef MAX_TEST
+    // -------------------------------------------------------------------------
+    //
+    //  Maximum Test
+    //
+    printf("\n\n================================================================================\n");
+    printf("\n    <<<<    Maximum Test    >>>>\n\n");
+    printf("Params:   %c\n\n", 'A' + MAX_TFHE_PARAMS_INDEX - 1);fflush(stdout);
+
+    // setup TFHE params
+    TFheGateBootstrappingParameterSet *max_tfhe_params = NULL;
+    setup_TFHE_params(MAX_TFHE_PARAMS_INDEX, &max_tfhe_params);
+    const LweParams *max_io_lwe_params = max_tfhe_params->in_out_params;
+    // generate TFHE secret keys
+    TFheGateBootstrappingSecretKeySet *max_tfhe_keys = new_random_gate_bootstrapping_secret_keyset(max_tfhe_params);
+
+    // alloc plaintexts & samples (n.b., opposite order, i.e., LSB-first)
+    #define MAX_WLEN 20
+    int32_t x_max_plain[MAX_WLEN] = {0, 1,-1, 0, 1,-1, 0,-1,-1,-1, 0, 1, 0, 1, 1, 0,-1, 0, 1,-1, };   // LSB-first
+    int32_t y_max_plain[MAX_WLEN] = {1,-1, 0, 1, 1, 0, 1,-1,-1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0,-1, };
+    int32_t   max_plain[MAX_WLEN];
+
+    int64_t exp_max = max_eval(&x_max_plain[0], &y_max_plain[0], MAX_WLEN);
+
+    LweSample *x_max = new_LweSample_array(MAX_WLEN,     max_io_lwe_params);
+    LweSample *y_max = new_LweSample_array(MAX_WLEN,     max_io_lwe_params);
+    LweSample   *max = new_LweSample_array(MAX_WLEN,     max_io_lwe_params);
+
+    // encrypt
+    for (int32_t i = 0; i < MAX_WLEN; i++)
+    {
+        sgn_sym_encr(x_max + i, x_max_plain[i], max_tfhe_keys);   // uses same encryption as for signum
+        sgn_sym_encr(y_max + i, y_max_plain[i], max_tfhe_keys);
+    }
+
+    // print inputs
+    for (int32_t i = 0; i < MAX_WLEN+1; i++) printf("-----");
+    printf("\n");
+
+    // x
+    printf(" X  ");
+    for (int32_t i = MAX_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", x_max_plain[i]);
+    printf("| %+9ld\n", bin_eval(&x_max_plain[0], MAX_WLEN));
+
+    // y
+    printf(" Y  ");
+    for (int32_t i = MAX_WLEN - 1; i >= 0; i--)
+        printf("| %+d ", y_max_plain[i]);
+    printf("| %+9ld\n", bin_eval(&y_max_plain[0], MAX_WLEN));
+    for (int32_t i = 0; i < MAX_WLEN+1; i++) printf("-----");
+    printf("   ");fflush(stdout);
+
+    // maximum
+    parallel_max(max, x_max, y_max,
+                      MAX_WLEN,
+#ifdef DBG_OUT
+                      max_tfhe_keys,
+#endif
+                      &(max_tfhe_keys->cloud));
+
+    // decrypt
+    for (int32_t i = 0; i < MAX_WLEN; i++)
+        max_plain[i] = sym_decr(max + i, PI_SGN, max_tfhe_keys);   // uses the same PI as for SGN
+
+    // print results
+    // max
+    printf("MAX ");
+    for (int32_t i = MAX_WLEN - 1; i >= 0; i--)
+    {
+        printf("| %+d ", max_plain[i]);
+    }
+    printf("| %+9ld   %s (exp. %+9ld)\n",
+                            bin_eval(&max_plain[0], MAX_WLEN),
+                            exp_max == bin_eval(&max_plain[0], MAX_WLEN) ? "\033[1;32mPASS\033[0m" : "\033[1;31mFAIL\033[0m",
+                            exp_max);
+    for (int32_t i = 0; i < MAX_WLEN+1; i++) printf("-----");
+    printf("\n");
+
+    // cleanup
+    delete_LweSample_array(MAX_WLEN,     x_max);
+    delete_LweSample(max);
+#endif
+
+
 #ifdef BS_TEST
     // -------------------------------------------------------------------------
     //
@@ -432,10 +518,11 @@ int32_t main(int32_t argc, char **argv)
     LweSample *id = new_LweSample(bs_io_lwe_params);
     LweSample *gl = new_LweSample(bs_io_lwe_params);
     LweSample *eq = new_LweSample(bs_io_lwe_params);
+    LweSample *mb = new_LweSample(bs_io_lwe_params);
 
     // print table heading
     printf("--------------------------------------------------------------------------------\n");
-    printf(" Encr -> Decr    | Id.  | <=> %2d | == %2d | timing (Id.)\n", BS_THR, BS_EQQ);
+    printf(" Encr -> Decr    | Id.  | <=> %2d | == %2d | max-bin | timing (Id.)\n", BS_THR, BS_EQQ);
     printf("--------------------------------------------------------------------------------\n");
 
     for (int32_t i = 0; i < (1 << pi); i++)
@@ -456,19 +543,25 @@ int32_t main(int32_t argc, char **argv)
         bs_eq(eq, a, BS_EQQ, pi, &(bs_tfhe_keys->cloud));
         // clock_t end_eq = clock();
 
+        // clock_t begin_eq = clock();
+        bs_max_bin(mb, a, pi, &(bs_tfhe_keys->cloud));
+        // clock_t end_eq = clock();
+
         // decrypt
         int32_t a_plain     = sym_decr(a,  pi, bs_tfhe_keys);
         int32_t id_plain    = sym_decr(id, pi, bs_tfhe_keys);
         int32_t gl_plain    = sym_decr(gl, pi, bs_tfhe_keys);
         int32_t eq_plain    = sym_decr(eq, pi, bs_tfhe_keys);
+        int32_t mb_plain    = sym_decr(mb, pi, bs_tfhe_keys);
 
-        printf(" D[E(%+3d)] = %+3d |  %+3d |    %+d  |   %+d  | %lu ms\n", i - (1 << (pi-1)), a_plain,
-                                    id_plain, gl_plain, eq_plain,
+        printf(" D[E(%+3d)] = %+3d |  %+3d |    %+d  |   %+d  |     %+d  | %lu ms\n", i - (1 << (pi-1)), a_plain,
+                                    id_plain,gl_plain,eq_plain, mb_plain,
                                                             (end_id - begin_id) / 1000);
     }
     printf("\n");
 
     // cleanup
+    delete_LweSample(mb);
     delete_LweSample(eq);
     delete_LweSample(gl);
     delete_LweSample(id);

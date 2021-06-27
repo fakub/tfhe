@@ -70,6 +70,16 @@ void bs_pos_gleq(LweSample *result,
  *  @brief          Description
  *
  */
+void bs_eq(LweSample *result,
+           const LweSample *sample,
+           const uint32_t thr,
+           const uint32_t pi,
+           const TFheGateBootstrappingCloudKeySet *bk);
+
+/**
+ *  @brief          Description
+ *
+ */
 void bs_01(LweSample *result,
            const LweSample *sample,
            const uint32_t pi,
@@ -79,10 +89,9 @@ void bs_01(LweSample *result,
  *  @brief          Description
  *
  */
-void bs_eq(LweSample *result,
-           const LweSample *sample,
-           const uint32_t thr,
-           const uint32_t pi,
-           const TFheGateBootstrappingCloudKeySet *bk);
+void bs_max_bin(LweSample *result,
+                const LweSample *sample,
+                const uint32_t pi,
+                const TFheGateBootstrappingCloudKeySet *bk);
 
 #endif // #ifndef BS_FUNCTIONS_H

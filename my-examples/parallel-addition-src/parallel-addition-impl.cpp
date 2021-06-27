@@ -627,6 +627,108 @@ void parallel_sgn(LweSample *sgn,
 }
 
 // -----------------------------------------------------------------------------
+//  Parallel Maximum
+//
+void parallel_max(LweSample *max,
+                  const LweSample *x,
+                  const LweSample *y,
+                  const uint32_t wlen_max,
+#ifdef DBG_OUT
+                  const TFheGateBootstrappingSecretKeySet *sk,
+#endif
+                  const TFheGateBootstrappingCloudKeySet *bk)
+{
+    const LweParams *io_lwe_params = bk->params->in_out_params;
+
+#ifdef DBG_OUT
+    printf("\n");
+#endif
+
+    // calc r = x - y
+    LweSample *my = new_LweSample_array(wlen_max,     io_lwe_params);   // for -y
+    LweSample *r  = new_LweSample_array(wlen_max + 1, io_lwe_params);
+
+    for (uint32_t i = 0; i < wlen_max; i++)
+        lweNegate(my + i, y + i, io_lwe_params);
+    parallel_add_bin(r, x, my,
+                     wlen_max,
+#ifdef DBG_OUT
+                     sk,
+#endif
+                     bk);
+
+    // calc sgn(r)
+    LweSample *s  = new_LweSample(io_lwe_params);
+    parallel_sgn(s, r, wlen_max + 1,
+#ifdef DBG_OUT
+                 sk,
+#endif
+                 bk);
+
+#ifdef DBG_OUT
+    int32_t s_plain = sym_decr(s, PI_SGN, sk);
+    printf("    sgn(x-y) = %d\n", s_plain);fflush(stdout);
+#endif
+
+    // do the 'max' job
+    LweSample *t  = new_LweSample(io_lwe_params);
+    LweSample *u  = new_LweSample(io_lwe_params);
+    LweSample *xs = new_LweSample(io_lwe_params);
+    LweSample *ys = new_LweSample(io_lwe_params);
+    LweSample *tm = new_LweSample(io_lwe_params);
+    for (uint32_t i = 0; i < wlen_max; i++)
+    {
+        // calc t & u
+        lweCopy(xs, x + i, io_lwe_params);
+        lweCopy(ys, y + i, io_lwe_params);
+        lweAddMulTo(xs, 2, s, io_lwe_params);
+        lweSubMulTo(ys, 2, s, io_lwe_params);
+        bs_max_bin(t, xs, PI_SGN, bk);
+        bs_max_bin(u, ys, PI_SGN, bk);
+
+#ifdef DBG_OUT
+        int32_t xs_plain = sym_decr(xs, PI_SGN, sk);
+        int32_t ys_plain = sym_decr(ys, PI_SGN, sk);
+        int32_t t_plain = sym_decr(t, PI_SGN, sk);
+        int32_t u_plain = sym_decr(u, PI_SGN, sk);
+        printf("    x_%d + 2s = %d, t = %d\n", i, xs_plain, t_plain);
+        printf("    y_%d - 2s = %d, u = %d\n", i, ys_plain, u_plain);fflush(stdout);
+#endif
+
+        // m = ID(t + u)
+        lweCopy(tm, t, io_lwe_params);
+        lweAddTo(tm, u, io_lwe_params);
+        bs_id(max + i, tm, PI_SGN, bk);
+
+#ifdef DBG_OUT
+        //~ int32_t  s_plain = sym_decr(s, PI_SGN, sk);
+        //~ sym_encr_priv(x+2*i, x2i_plain, PI_SGN, sk);
+        //~ int32_t x2i1_plain = 0;
+        //~ LweSample *z1    = new_LweSample(io_lwe_params);    // additive 1
+        //~ LweSample *xi_an = new_LweSample(io_lwe_params);    // x_i for analysis
+        //~ LweSample *r0_an = new_LweSample(io_lwe_params);    // r_0 for analysis
+        //~ sym_encr_priv(z1, 1, PI_SGN, sk);
+#else
+        // progress bar ...
+        //~ printf("=");fflush(stdout);
+#endif
+    }
+
+    // progress bar end
+    printf("\n");
+
+    // cleanup
+    delete_LweSample_array(wlen_max + 1, r);
+    delete_LweSample_array(wlen_max,     my);
+    delete_LweSample(s);
+    delete_LweSample(t);
+    delete_LweSample(u);
+    delete_LweSample(xs);
+    delete_LweSample(ys);
+    delete_LweSample(tm);
+}
+
+// -----------------------------------------------------------------------------
 //  Misc
 //
 void die_soon(const char* message)
@@ -674,6 +776,18 @@ int32_t sgn_eval(const int32_t *const x,
     } while (i > 0 && x[i] == 0);
 
     return (x[i] > 0) ? 1 : (x[i] < 0 ? -1 : 0);
+}
+
+int64_t max_eval(const int32_t *const x,
+                 const int32_t *const y,
+                 const uint32_t len)
+{
+    if (len == 0) return 0;
+
+    int64_t xv = bin_eval(x, len);
+    int64_t yv = bin_eval(y, len);
+
+    return (xv > yv) ? xv : yv;
 }
 
 

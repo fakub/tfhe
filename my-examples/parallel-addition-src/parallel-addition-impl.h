@@ -35,19 +35,20 @@
 // choose parallel addition scenario (TFHE parameters are by default corresponding to this scenario)
 #define  PA_SCENARIO_QUAD       H_PARALLEL_4
 
-// choose TFHE parameters for signum test
+// choose TFHE parameters for signum test (same go for maximum test)
 #define SGN_TFHE_PARAMS_INDEX   F_PARALLEL_2
 
 // choose TFHE parameters for bootstrapping tests
-#define  BS_TFHE_PARAMS_INDEX   C_CARRY_2_BIT
+#define  BS_TFHE_PARAMS_INDEX   F_PARALLEL_2
 
-//~ #define DBG_OUT
+#define DBG_OUT
 //~ #define NO_NOISE
 
 //  ----    do not edit    ----
 #define SEQ_TFHE_PARAMS_INDEX SEQ_SCENARIO          // by default, use TFHE params derived for particular scenario
 #define PAB_TFHE_PARAMS_INDEX  PA_SCENARIO_BIN      // by default, use TFHE params derived for particular scenario
 #define PAQ_TFHE_PARAMS_INDEX  PA_SCENARIO_QUAD     // by default, use TFHE params derived for particular scenario
+#define MAX_TFHE_PARAMS_INDEX SGN_TFHE_PARAMS_INDEX // !! use the same params for both max and signum
 #define N_WITH_CARRY_SCENARIOS 3
 #define N_PARALLEL_SCENARIOS 6
 #define N_PARAM_SETS (1 + (N_WITH_CARRY_SCENARIOS) + (N_PARALLEL_SCENARIOS))
@@ -281,6 +282,29 @@ void parallel_sgn(LweSample *sgn,
                   const TFheGateBootstrappingCloudKeySet *bk);
 
 // -----------------------------------------------------------------------------
+//  Parallel Maximum
+//
+
+/**
+ *  @brief          Main Parallel Maximum Function
+ *
+ *  @param[out]     LWE Sample x
+ *  @param[out]     LWE Sample y
+ *  @param[in]      LWE Sample (length +wlen+)
+ *  @param[in]      Length of LWE samples
+ *  @param[in]      Bootstrapping Keys
+ *
+ */
+void parallel_max(LweSample *max,
+                  const LweSample *x,
+                  const LweSample *y,
+                  const uint32_t wlen_max,
+#ifdef DBG_OUT
+                  const TFheGateBootstrappingSecretKeySet *sk,
+#endif
+                  const TFheGateBootstrappingCloudKeySet *bk);
+
+// -----------------------------------------------------------------------------
 //  Misc
 //
 
@@ -311,6 +335,14 @@ int64_t bin_eval(const int32_t *const x,
  *
  */
 int32_t sgn_eval(const int32_t *const x,
+                 const uint32_t len);
+
+/**
+ *  @brief          Description
+ *
+ */
+int64_t max_eval(const int32_t *const x,
+                 const int32_t *const y,
                  const uint32_t len);
 
 #endif // #ifndef PARALLEL_ADDITION_IMPL_H

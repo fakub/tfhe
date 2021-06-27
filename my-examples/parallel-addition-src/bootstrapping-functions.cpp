@@ -70,6 +70,16 @@ static void bs_set_tv_pos_gleq(Torus32 *const tv,
  *  @brief          Description
  *
  */
+static void bs_set_tv_eq(Torus32 *const tv,
+                         const uint32_t N,
+                         const uint32_t pi,
+                         const uint32_t thr,
+                         const Torus32 MU);
+
+/**
+ *  @brief          Description
+ *
+ */
 static void bs_set_tv_const(Torus32 *const tv,
                             const uint32_t N,
                             const uint32_t pi,
@@ -80,11 +90,10 @@ static void bs_set_tv_const(Torus32 *const tv,
  *  @brief          Description
  *
  */
-static void bs_set_tv_eq(Torus32 *const tv,
-                         const uint32_t N,
-                         const uint32_t pi,
-                         const uint32_t thr,
-                         const Torus32 MU);
+static void bs_set_tv_max_bin(Torus32 *const tv,
+                              const uint32_t N,
+                              const uint32_t pi,
+                              const Torus32 MU);
 
 /**
  *  @brief          Description
@@ -208,6 +217,27 @@ void bs_pos_gleq(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
+void bs_eq(LweSample *result,
+           const LweSample *sample,
+           const uint32_t thr,
+           const uint32_t pi,
+           const TFheGateBootstrappingCloudKeySet *bk)
+{
+    // get N, MU
+    const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
+    const Torus32 MU = modSwitchToTorus32(1, 1 << pi);
+
+    // init test vector with stair-case function
+    TorusPolynomial *testvect = new_TorusPolynomial(N);
+    bs_set_tv_eq(&testvect->coefsT[0], N, pi, thr, MU);
+
+    // call BS priv
+    bs_with_tv(result, sample, bk, testvect);
+
+    // delete test vector
+    delete_TorusPolynomial(testvect);
+}
+
 void bs_01(LweSample *result,
            const LweSample *sample,
            const uint32_t pi,
@@ -236,11 +266,10 @@ void bs_01(LweSample *result,
     delete_TorusPolynomial(testvect);
 }
 
-void bs_eq(LweSample *result,
-           const LweSample *sample,
-           const uint32_t thr,
-           const uint32_t pi,
-           const TFheGateBootstrappingCloudKeySet *bk)
+void bs_max_bin(LweSample *result,
+                const LweSample *sample,
+                const uint32_t pi,
+                const TFheGateBootstrappingCloudKeySet *bk)
 {
     // get N, MU
     const uint32_t N = (uint32_t)(bk->bkFFT->accum_params->N);
@@ -248,7 +277,7 @@ void bs_eq(LweSample *result,
 
     // init test vector with stair-case function
     TorusPolynomial *testvect = new_TorusPolynomial(N);
-    bs_set_tv_eq(&testvect->coefsT[0], N, pi, thr, MU);
+    bs_set_tv_max_bin(&testvect->coefsT[0], N, pi, MU);
 
     // call BS priv
     bs_with_tv(result, sample, bk, testvect);
@@ -424,29 +453,6 @@ static void bs_set_tv_pos_gleq(Torus32 *const tv,
     }
 }
 
-static void bs_set_tv_const(Torus32 *const tv,
-                            const uint32_t N,
-                            const uint32_t pi,
-                            const double val,   // c
-                            const Torus32 MU)
-{
-    uint32_t i;
-
-    //          <-- to be set up manually ----->    <-- negacyclic extension ------>
-    //        |                                  |                                   |
-    //   c    | ———————————————————————————————— |                                   |
-    //   :    |                                  |    8   9  10  11  12  13  14  15  |
-    //   0 ·· | ·······························  |  ································ | ····
-    //   :    |   0   1   2   3   4   5   6   7  |                                   |
-    //  -c    |                                  |  ———————————————————————————————— |
-    //        |                                  |                                   |
-
-    // make the positive part (positive half around zero and the others)
-    for (i = 0; i < N - (N >> pi); i++) tv[i] =  (Torus32)(val * MU);
-    // make the negative half around zero
-    for (i = N - (N >> pi); i < N; i++) tv[i] = -(Torus32)(val * MU);
-}
-
 static void bs_set_tv_eq(Torus32 *const tv,
                          const uint32_t N,
                          const uint32_t pi,
@@ -480,6 +486,58 @@ static void bs_set_tv_eq(Torus32 *const tv,
     s = (1 << (pi-1)) - thr;
     for (i = s * (N >> (pi-1)) - (N >> pi);  i < s * (N >> (pi-1)) + (N >> pi); i++)
         tv[i] = 1 * MU;
+}
+
+static void bs_set_tv_const(Torus32 *const tv,
+                            const uint32_t N,
+                            const uint32_t pi,
+                            const double val,   // c
+                            const Torus32 MU)
+{
+    uint32_t i;
+
+    //          <-- to be set up manually ----->    <-- negacyclic extension ------>
+    //        |                                  |                                   |
+    //   c    | ———————————————————————————————— |                                   |
+    //   :    |                                  |    8   9  10  11  12  13  14  15  |
+    //   0 ·· | ·······························  |  ································ | ····
+    //   :    |   0   1   2   3   4   5   6   7  |                                   |
+    //  -c    |                                  |  ———————————————————————————————— |
+    //        |                                  |                                   |
+
+    // make the positive part (positive half around zero and the others)
+    for (i = 0; i < N - (N >> pi); i++) tv[i] =  (Torus32)(val * MU);
+    // make the negative half around zero
+    for (i = N - (N >> pi); i < N; i++) tv[i] = -(Torus32)(val * MU);
+}
+
+static void bs_set_tv_max_bin(Torus32 *const tv,
+                              const uint32_t N,
+                              const uint32_t pi,
+                              const Torus32 MU)
+{
+    uint32_t i, s;
+
+    if (pi < 4)
+        die_soon("pi is to small for max-bin.\n");
+
+    // make a 0-stair around zero (and 2^(pi-1))
+    for (i = 0; i < (N >> pi); i++)     tv[i] = 0;
+    for (i = N - (N >> pi); i < N; i++) tv[i] = 0;
+
+    // make max-bin stairs: -1, 0, 1 at 1, 2, 3
+    for (i = 1 * (N >> (pi-1)) - (N >> pi);  i < 1 * (N >> (pi-1)) + (N >> pi); i++)
+        tv[i] = -1 * MU;
+    for (i = 2 * (N >> (pi-1)) - (N >> pi);  i < 2 * (N >> (pi-1)) + (N >> pi); i++)
+        tv[i] =  0;
+    for (i = 3 * (N >> (pi-1)) - (N >> pi);  i < 3 * (N >> (pi-1)) + (N >> pi); i++)
+        tv[i] =  1 * MU;
+    // make other stairs: 0
+    for (s = 4; s < (1u << (pi-1)); s++)
+    {
+        for (i = s * (N >> (pi-1)) - (N >> pi);  i < s * (N >> (pi-1)) + (N >> pi); i++)
+            tv[i] = 0;
+    }
 }
 
 static void bs_with_tv(LweSample *result,
