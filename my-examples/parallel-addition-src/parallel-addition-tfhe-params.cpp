@@ -60,21 +60,21 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .max_stdev = 0.04167,
     },
     {   // C_CARRY_2_BIT                    95 ms
-        .pi = 4,
+        .pi = 3,
         .N = 1024,
         .k = 1,
-        .n = 480,
+        .n = 490,
         .bk_l = 2,
         .bk_Bgbit = 9,
         .ks_basebit = 1,
-        .ks_length = 13,
+        .ks_length = 14,
 #ifdef NO_NOISE
         .ks_stdev = 0.0, .bk_stdev = 0.0,
 #else
-        .ks_stdev = pow(2.,-15.73),
-        .bk_stdev = pow(2.,-28.12),
+        .ks_stdev = pow(2.,-16.03),
+        .bk_stdev = pow(2.,-28.39),
 #endif
-        .max_stdev = 0.01042,
+        .max_stdev = 0.02084,
     },
     {   // D_PARALLEL_2                     98 ms
         .pi = 3,
@@ -91,7 +91,7 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
         .ks_stdev = pow(2.,-15.73),
         .bk_stdev = pow(2.,-28.12),
 #endif
-        .max_stdev = 0.01042,
+        .max_stdev = 0.02084,
     },
     {   // E_PARALLEL_2                     103 ms
         .pi = 4,
