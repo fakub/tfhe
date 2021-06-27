@@ -71,8 +71,8 @@ const tfhe_params_t tfhe_params_store[N_PARAM_SETS] =
 #ifdef NO_NOISE
         .ks_stdev = 0.0, .bk_stdev = 0.0,
 #else
-        .ks_stdev = pow(2.,-16.03),
-        .bk_stdev = pow(2.,-28.39),
+        .ks_stdev = pow(2.,-16.11),
+        .bk_stdev = pow(2.,-28.47),
 #endif
         .max_stdev = 0.02084,
     },
